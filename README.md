@@ -1,2 +1,3 @@
-# wis2node-api
-WIS 2 node API
+# wis2box-api
+
+WIS 2.0 in a box OGC API

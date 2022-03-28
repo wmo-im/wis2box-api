@@ -61,6 +61,7 @@ class ERDDAPProvider(BaseProvider):
         LOGGER.debug('Setting query filters')
         query = self.options.get('query', '')
         filters = self.options.get('filters', '')
+        station_id_field = self.options.get("station_id")
 
         url = f'{url}.geoJson{query}{filters}'
 
@@ -80,10 +81,35 @@ class ERDDAPProvider(BaseProvider):
         data = json.loads(requests.get(url).text)['features'][startindex:limit]
 
         # add id to each feature as this is required by pygeoapi
-        for idx in range(len(data)):
-            data[idx]['id'] = idx
+        for idx in range( len(data)):
+            # ID used to extract individual features
+            try:
+                station_id = data[idx]["properties"][station_id_field]
+            except KeyError: # ERDDAP changes case of parameters depending on result !
+                station_id = data[idx]["properties"][station_id_field.upper()]
+            except Exception as e:
+                print(e)
+                return{
+                    "type": "FeatureCollection",
+                    "features": [],
+                    "status": "Error"
+                }
+            obs_time = data[idx]["properties"]["time"]
+            obs_id = f"&time={obs_time}&{station_id_field}=%22{station_id}%22"
+            data[idx]["id"] = obs_id
 
         return {
             'type': 'FeatureCollection',
             'features': data
         }
+
+    def get(self, identifier, **kwargs):
+        url = self.data
+        query = self.options["query"] if self.options["query"] is not None else ""  # noqa
+        filters = self.options["filters"] if self.options["filters"] is not None else ""  # noqa
+        filters = f"{filters}{identifier}"
+        url = f"{url}.geoJson{query}{filters}"
+        data = json.loads(requests.get(url).text)["features"]
+        if len(data) != 1:
+            LOGGER.warning(f"More than 1 feature returned for {identifier}, features truncated")  # noqa
+        return data

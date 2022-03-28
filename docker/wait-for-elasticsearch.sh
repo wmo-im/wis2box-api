@@ -34,12 +34,12 @@ until $(curl --output /dev/null --silent --head --fail "$host")  ; do
 done
 
 # First wait for ES to start...
-response=$(curl $host)
+response=$(curl --write-out %{http_code} --silent --output /dev/null "$host")
 
 until [ "$response" = "200" ]  ; do
     response=$(curl --write-out %{http_code} --silent --output /dev/null "$host")
     >&2 echo "Elasticsearch is up but unavailable - No Response - sleeping"
-    sleep 10
+    sleep 5
 
 done
 

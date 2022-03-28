@@ -27,12 +27,12 @@ echo "START /entrypoint.sh"
 set +e
 
 export PYGEOAPI_HOME=/pygeoapi
-export PYGEOAPI_CONFIG="${PYGEOAPI_HOME}/local.config.yml"
+export PYGEOAPI_CONFIG="${WIS2BOX_API_CONFIG}"
 export PYGEOAPI_OPENAPI="${PYGEOAPI_HOME}/local.openapi.yml"
 
 # gunicorn env settings with defaults
-SCRIPT_NAME=${SCRIPT_NAME:=/}
-CONTAINER_NAME=${CONTAINER_NAME:=pygeoapi}
+SCRIPT_NAME="/"
+CONTAINER_NAME="wis2box-api"
 CONTAINER_HOST=${CONTAINER_HOST:=0.0.0.0}
 CONTAINER_PORT=${CONTAINER_PORT:=80}
 WSGI_WORKERS=${WSGI_WORKERS:=4}
@@ -50,6 +50,9 @@ function error() {
 
 # Workdir
 cd ${PYGEOAPI_HOME}
+
+# Lock all python files (for gunicorn hot reload)
+find . -type f -name "*.py" | xargs chmod -R 0444
 
 echo "Trying to generate openapi.yml"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
@@ -70,6 +73,8 @@ case ${entry_cmd} in
 				--timeout ${WSGI_WORKER_TIMEOUT} \
 				--name=${CONTAINER_NAME} \
 				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
+				--reload \
+				--reload-extra-file ${PYGEOAPI_CONFIG} \
 				wis2box_api.app:app
 	  ;;
 	*)

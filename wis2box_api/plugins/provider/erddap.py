@@ -81,11 +81,11 @@ class ERDDAPProvider(BaseProvider):
         data = json.loads(requests.get(url).text)['features'][startindex:limit]
 
         # add id to each feature as this is required by pygeoapi
-        for idx in range( len(data)):
+        for idx in range(len(data)):
             # ID used to extract individual features
             try:
                 station_id = data[idx]["properties"][station_id_field]
-            except KeyError: # ERDDAP changes case of parameters depending on result !
+            except KeyError:  # noqa, ERDDAP changes case of parameters depending on result
                 station_id = data[idx]["properties"][station_id_field.upper()]
             except Exception as e:
                 print(e)

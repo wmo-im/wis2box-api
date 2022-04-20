@@ -75,6 +75,7 @@ case ${entry_cmd} in
 				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
 				--reload \
 				--reload-extra-file ${PYGEOAPI_CONFIG} \
+				--reload-extra-file ${PYGEOAPI_OPENAPI} \
 				wis2box_api.app:app
 	  ;;
 	*)

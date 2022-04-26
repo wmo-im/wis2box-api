@@ -26,7 +26,7 @@
 #
 # providers:
 #     -   type: feature
-#         name: pygeoapi.provider.erddap.ERDDAPProvider
+#         name: wis2box_api.plugins.provider.erddap.ERDDAPProvider
 #         data: http://osmc.noaa.gov/erddap/tabledap/OSMC_Points
 #         id_field: id
 #         time_field: time
@@ -42,7 +42,7 @@ import logging
 
 import requests
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,6 +51,19 @@ class ERDDAPProvider(BaseProvider):
     def __init__(self, provider_def):
         super().__init__(provider_def)
 
+        LOGGER.debug('Setting provider query filters')
+        self.query_ = self.options.get('query', '')
+        self.filters = self.options.get('filters', '')
+        self.station_id_field = self.options.get('station_id')
+        self.fields = self.get_fields()
+
+    def get_fields(self):
+        properties = self.query()['features'][0]['properties']
+        for key, value in properties.items():
+            LOGGER.debug(key, value)
+            properties[key] = {'type': type(value).__name__}
+        return properties
+
     def query(self, startindex=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -58,12 +71,7 @@ class ERDDAPProvider(BaseProvider):
 
         url = self.data
 
-        LOGGER.debug('Setting query filters')
-        query = self.options.get('query', '')
-        filters = self.options.get('filters', '')
-        station_id_field = self.options.get("station_id")
-
-        url = f'{url}.geoJson{query}{filters}'
+        url = f'{url}.geoJson{self.query_}{self.filters}'
 
         timefilter = ''
 
@@ -84,19 +92,18 @@ class ERDDAPProvider(BaseProvider):
         for idx in range(len(data)):
             # ID used to extract individual features
             try:
-                station_id = data[idx]["properties"][station_id_field]
-            except KeyError:  # noqa, ERDDAP changes case of parameters depending on result
-                station_id = data[idx]["properties"][station_id_field.upper()]
-            except Exception as e:
-                print(e)
-                return{
-                    "type": "FeatureCollection",
-                    "features": [],
-                    "status": "Error"
-                }
-            obs_time = data[idx]["properties"]["time"]
-            obs_id = f"&time={obs_time}&{station_id_field}=%22{station_id}%22"
-            data[idx]["id"] = obs_id
+                station_id = data[idx]['properties'][self.station_id_field]
+            except KeyError:
+                # ERDDAP changes case of parameters depending on result
+                station_id = data[idx]['properties'][self.station_id_field.upper()]  # noqa
+            except Exception as err:
+                msg = 'Cannot determine station identifier'
+                LOGGER.error(msg, err)
+                raise ProviderQueryError(msg)
+
+            obs_time = data[idx]['properties']['time']
+            obs_id = f'{station_id}.{obs_time}'
+            data[idx]['id'] = obs_id
 
         return {
             'type': 'FeatureCollection',
@@ -105,11 +112,16 @@ class ERDDAPProvider(BaseProvider):
 
     def get(self, identifier, **kwargs):
         url = self.data
-        query = self.options["query"] if self.options["query"] is not None else ""  # noqa
-        filters = self.options["filters"] if self.options["filters"] is not None else ""  # noqa
-        filters = f"{filters}{identifier}"
-        url = f"{url}.geoJson{query}{filters}"
-        data = json.loads(requests.get(url).text)["features"]
-        if len(data) != 1:
-            LOGGER.warning(f"More than 1 feature returned for {identifier}, features truncated")  # noqa
+
+        station_id, obs_time = identifier.split('.')
+        id_filter = f'&time={obs_time}&{self.station_id_field}=%22{station_id}%22'  # noqa
+
+        filters = f'{self.filters}{id_filter}'
+        url = f'{url}.geoJson{self.query_}{filters}'
+        LOGGER.debug(f'Fetching data from {url}')
+        data = json.loads(requests.get(url).text)['features']
+        if len(data) > 1:
+            LOGGER.warning(f'More than 1 feature returned for {identifier}, features truncated')  # noqa
+        data = data[0]
+        data['id'] = identifier
         return data

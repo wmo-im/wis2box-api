@@ -26,6 +26,13 @@ echo "START /entrypoint.sh"
 
 set +e
 
+if test -f "${WIS2BOX_API_CONFIG}"; then
+    echo "${WIS2BOX_API_CONFIG} already exists."
+else
+    echo "Creating ${WIS2BOX_API_CONFIG}."
+    cp /app/docker/pygeoapi-config.yml ${WIS2BOX_API_CONFIG}
+fi
+
 export PYGEOAPI_HOME=/pygeoapi
 export PYGEOAPI_CONFIG="${WIS2BOX_API_CONFIG}"
 export PYGEOAPI_OPENAPI="${PYGEOAPI_HOME}/local.openapi.yml"

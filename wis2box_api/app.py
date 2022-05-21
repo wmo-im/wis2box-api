@@ -47,4 +47,4 @@ except ImportError:  # CORS needs to be handled by upstream server
 
 @app.route('/')
 def home():
-    return redirect('https://wis2box.readthedocs.org', code=302)
+    return redirect('https://docs.wis2box.wis.wmo.int', code=302)

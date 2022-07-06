@@ -24,6 +24,7 @@ FROM geopython/pygeoapi:latest
 RUN apt-get update -y && apt-get install curl -y
 
 COPY . /app
+COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
 
 RUN cd /app \
     && python3 setup.py install \

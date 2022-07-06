@@ -27,10 +27,13 @@ from pygeoapi.flask_app import BLUEPRINT as pygeoapi_blueprint
 from pygeoapi.openapi import get_oas
 from pygeoapi.util import yaml_load
 
+from wis2box_api.flask_admin import ADMIN_BLUEPRINT
+
 app = Flask(__name__, static_url_path='/static')
 
 app.url_map.strict_slashes = False
 app.register_blueprint(pygeoapi_blueprint, url_prefix='/oapi')
+app.register_blueprint(ADMIN_BLUEPRINT, url_prefix='/oapi')
 
 # Generate pygeoapi openapi document
 with open(os.environ.get('PYGEOAPI_CONFIG'), "r") as fh:

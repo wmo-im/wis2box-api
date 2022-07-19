@@ -21,24 +21,27 @@
 
 import fcntl
 import os
+import json
+import json_merge_patch
 import logging
 from typing import Any, Tuple, Union
 import yaml
 
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
-# from pygeoapi.config import validate_config
+
+from pygeoapi.config import validate_config
+from pygeoapi.openapi import get_oas, validate_openapi_document
 from pygeoapi.util import to_json, render_j2_template
 
+
 LOGGER = logging.getLogger(__name__)
-
-if 'PYGEOAPI_CONFIG' not in os.environ:
-    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
-
-PYGEOAPI_CONFIG = os.environ.get('PYGEOAPI_CONFIG')
 
 
 class Admin(API):
     """Admin object"""
+
+    PYGEOAPI_CONFIG = os.environ.get("WIS2BOX_API_CONFIG")
+    PYGEOAPI_OPENAPI = os.environ.get("PYGEOAPI_OPENAPI")
 
     def __init__(self, config):
         """
@@ -51,17 +54,63 @@ class Admin(API):
 
         super().__init__(config)
 
+    def validate(self):
+        """
+        Validate pygeoapi configuration and open api to file
+        """
+        # validate pygeoapi configuration
+        validate_config(self.config)
+        # validate open api document
+        oas = get_oas(self.config)
+        validate_openapi_document(oas)
+
     def write(self):
         """
-        Write pygeoapi configuration to file
+        Write pygeoapi configuration and open api to file
         """
+        self.write_config()
+        self.write_oas()
+
+    def write_config(self):
+        """
+        Write pygeoapi configuration file
+        """
+        # validate pygeoapi configuration
         # validate_config(self.config)
 
-        with open(PYGEOAPI_CONFIG, "w") as fh:
+        # write pygeoapi configuration
+        LOGGER.debug('Writing configutation')
+        with open(self.PYGEOAPI_CONFIG, "w") as fh:
             fcntl.lockf(fh, fcntl.LOCK_EX)
 
-            yaml.safe_dump(self.config, fh, sort_keys=False, indent=4,
-                           default_flow_style=False)
+            yaml.safe_dump(
+                self.config,
+                fh,
+                sort_keys=False,
+                default_flow_style=False,
+            )
+        LOGGER.debug('Finished writing configutation')
+
+    def write_oas(self):
+        """
+        Write pygeoapi open api document
+        """
+        # validate open api document
+        oas = get_oas(self.config)
+        # validate_openapi_document(oas)
+
+        # write open api document
+        LOGGER.debug('Writing open api document')
+        with open(self.PYGEOAPI_OPENAPI, "w") as fh:
+            fcntl.lockf(fh, fcntl.LOCK_EX)
+
+            yaml.safe_dump(
+                oas,
+                fh,
+                sort_keys=False,
+                default_flow_style=False,
+            )
+        LOGGER.debug('Finished writing open api document')
 
     @pre_process
     def admin(self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
@@ -79,18 +128,18 @@ class Admin(API):
         headers = request.get_response_headers()
 
         if request.format == F_HTML:
-            content = render_j2_template(self.config,
-                                         'admin/index.html',
-                                         self.config,
-                                         request.locale)
+            content = render_j2_template(
+                self.config, 'admin/index.html', self.config, request.locale
+            )
         else:
             content = to_json(self.config, self.pretty_print)
 
         return headers, 200, content
 
     @pre_process
-    def resources(self, request: Union[APIRequest, Any]
-                  ) -> Tuple[dict, int, str]:
+    def resources(
+        self, request: Union[APIRequest, Any]
+    ) -> Tuple[dict, int, str]:
         """
         Provide admin document
 
@@ -105,19 +154,77 @@ class Admin(API):
         headers = request.get_response_headers()
 
         if request.format == F_HTML:
-            content = render_j2_template(self.config,
-                                         'admin/index.html',
-                                         self.config['resources'],
-                                         request.locale)
+            content = render_j2_template(
+                self.config,
+                'admin/index.html',
+                self.config['resources'],
+                request.locale,
+            )
         else:
             content = to_json(self.config['resources'], self.pretty_print)
 
         return headers, 200, content
 
     @pre_process
-    def get_resource(self, request: Union[APIRequest, Any],
-                     resource_id: str
-                     ) -> Tuple[dict, int, str]:
+    def add_resource(
+        self, request: Union[APIRequest, Any]
+    ) -> Tuple[dict, int, str]:
+        """
+        Post resource configuration
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers()
+
+        data = request.data
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg
+            )
+
+        try:
+            # Parse data
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input is not valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg
+            )
+
+        resource_id = next(iter(data.keys()))
+        LOGGER.debug(f'Adding resource: {resource_id}')
+
+        if self.config['resources'].get(resource_id) is not None:
+            # Resource already exists
+            msg = f'Resource exists: {resource_id}'
+            LOGGER.error(msg)
+            return self.get_exception(
+                400, headers, request.format, 'NoApplicableCode', msg
+            )
+
+        self.config['resources'].update(data)
+        self.write()
+
+        return headers, 200, data
+
+    @pre_process
+    def get_resource(
+        self, request: Union[APIRequest, Any], resource_id: str
+    ) -> Tuple[dict, int, str]:
         """
         Get resource configuration
 
@@ -137,27 +244,27 @@ class Admin(API):
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg)
+                400, headers, request.format, 'ResourceNotFound', msg
+            )
 
         if request.format == F_HTML:
-            content = render_j2_template(self.config,
-                                         'admin/index.html',
-                                         resource,
-                                         request.locale)
+            content = render_j2_template(
+                self.config, 'admin/index.html', resource, request.locale
+            )
         else:
             content = to_json(resource, self.pretty_print)
 
         return headers, 200, content
 
     @pre_process
-    def delete_resource(self, request: Union[APIRequest, Any],
-                        resource_id: str
-                        ) -> Tuple[dict, int, str]:
+    def delete_resource(
+        self, request: Union[APIRequest, Any], resource_id: str
+    ) -> Tuple[dict, int, str]:
         """
         Delete resource configuration
 
         :param request: A request object
-        :param resource_id:
+        :param resource_id: resource identifier
 
         :returns: tuple of headers, status code, content
         """
@@ -168,19 +275,139 @@ class Admin(API):
         headers = request.get_response_headers()
 
         try:
-            resource = self.config['resources'].pop(resource_id)
+            LOGGER.debug(f'Removing resource configuration for: {resource_id}')
+            self.config['resources'].pop(resource_id)
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg)
+                400, headers, request.format, 'ResourceNotFound', msg
+            )
 
+        LOGGER.debug('Resource removed, validating and saving configuration')
+        self.write()
+
+        return headers, 204, None
+
+    @pre_process
+    def put_resource(
+        self, request: Union[APIRequest, Any], resource_id: str
+    ) -> Tuple[dict, int, str]:
+        """
+        Update complete resource configuration
+
+        :param request: A request object
+        :param resource_id: resource identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers()
+
+        try:
+            LOGGER.debug('Verifying resource exists')
+            self.config['resources'][resource_id]
+        except KeyError:
+            msg = f'Resource not found: {resource_id}'
+            return self.get_exception(
+                400, headers, request.format, 'ResourceNotFound', msg
+            )
+
+        data = request.data
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg
+            )
+
+        try:
+            # Parse data
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input is not valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg
+            )
+
+        LOGGER.debug('Updating resource')
+        self.config.update({resource_id: data})
+
+        LOGGER.debug('Saving configuration')
+        self.write()
+
+        return headers, 204, None
+
+    @pre_process
+    def patch_resource(
+        self, request: Union[APIRequest, Any], resource_id: str
+    ) -> Tuple[dict, int, str]:
+        """
+        Update partial resource configuration
+
+        :param request: A request object
+        :param resource_id: resource identifier
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers()
+
+        try:
+            LOGGER.debug('Verifying resource exists')
+            resource = self.config['resources'][resource_id]
+        except KeyError:
+            msg = f'Resource not found: {resource_id}'
+            return self.get_exception(
+                400, headers, request.format, 'ResourceNotFound', msg
+            )
+
+        data = request.data
+        if not data:
+            msg = 'missing request data'
+            return self.get_exception(
+                400, headers, request.format, 'MissingParameterValue', msg
+            )
+
+        try:
+            # Parse data
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
+
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input is not valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return self.get_exception(
+                400, headers, request.format, 'InvalidParameterValue', msg
+            )
+
+        LOGGER.debug('Merging resource block')
+        data = json_merge_patch.merge(resource, data)
+        LOGGER.debug('Updating resource')
+        self.config.update({resource_id: data})
+
+        LOGGER.debug('Saving configuration')
         self.write()
 
         if request.format == F_HTML:
-            content = render_j2_template(self.config,
-                                         'admin/index.html',
-                                         resource,
-                                         request.locale)
+            content = render_j2_template(
+                self.config, 'admin/index.html', resource, request.locale
+            )
         else:
             content = to_json(resource, self.pretty_print)
 

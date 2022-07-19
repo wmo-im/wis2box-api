@@ -24,8 +24,8 @@ import logging
 
 from flask import Blueprint, request
 
-from pygeoapi.util import yaml_load
 from pygeoapi.flask_app import get_response
+from pygeoapi.util import yaml_load
 
 from wis2box_api.admin import Admin
 
@@ -39,17 +39,13 @@ if 'PYGEOAPI_CONFIG' not in os.environ:
 with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
     CONFIG = yaml_load(fh)
 
-ADMIN_BLUEPRINT = Blueprint('admin', __name__,
-                            template_folder="templates",
-                            static_folder="/static",
-                            )
-
 admin_ = Admin(CONFIG)
-
-
-@ADMIN_BLUEPRINT.record_once
-def on_load(state):
-    state.app.secret_key = os.urandom(32)
+ADMIN_BLUEPRINT = Blueprint(
+    'admin',
+    __name__,
+    template_folder='templates',
+    static_folder='/static',
+)
 
 
 @ADMIN_BLUEPRINT.route('/admin')
@@ -69,19 +65,30 @@ def resources():
 
     :returns: HTTP response
     """
-    if request.method == "GET":
+    if request.method == 'GET':
         return get_response(admin_.resources(request))
 
+    elif request.method == 'POST':
+        return get_response(admin_.add_resource(request))
 
-@ADMIN_BLUEPRINT.route('/admin/resources/<resource_id>',
-                       methods=['GET', 'PUT', 'PATCH', 'DELETE'])
+
+@ADMIN_BLUEPRINT.route(
+    '/admin/resources/<resource_id>', methods=['GET', 'PUT', 'PATCH', 'DELETE']
+)
 def resource(resource_id):
     """
     Resource landing page endpoint
 
     :returns: HTTP response
     """
-    if request.method == "GET":
+    if request.method == 'GET':
         return get_response(admin_.get_resource(request, resource_id))
-    elif request.method == "DELETE":
+
+    elif request.method == 'DELETE':
         return get_response(admin_.delete_resource(request, resource_id))
+
+    elif request.method == 'PUT':
+        return get_response(admin_.put_resource(request, resource_id))
+
+    elif request.method == 'PATCH':
+        return get_response(admin_.patch_resource(request, resource_id))

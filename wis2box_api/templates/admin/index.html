@@ -17,10 +17,7 @@ extrahead %}
 <div id="app" data-app>
   <v-main>
     <v-responsive class="mx-auto" width="90%" max-width="1130">
-      <v-container v-for="(val, key) in tree" :key="key">
-        <h2 v-html="key"></h2>
-        <gui-block :key="`tree.${key}`" :label="key" :vals="val" />
-      </v-container>
+      <gui-block key="tree" label="root" :vals="tree" />
     </v-responsive>
   </v-main>
 </div>

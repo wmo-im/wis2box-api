@@ -25,6 +25,7 @@ RUN apt-get update -y && apt-get install curl -y
 
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
+ENV PYGEOAPI_OPENAPI=/pygeoapi/local.openapi.yml
 
 RUN cd /app \
     && python3 setup.py install \

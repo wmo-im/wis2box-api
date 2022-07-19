@@ -20,29 +20,20 @@
 ###############################################################################
 
 from flask import Flask, redirect
-import os
-from yaml import safe_dump
 
 from pygeoapi.flask_app import BLUEPRINT as pygeoapi_blueprint
-from pygeoapi.openapi import get_oas
-from pygeoapi.util import yaml_load
 
 from wis2box_api.flask_admin import ADMIN_BLUEPRINT
 
 app = Flask(__name__, static_url_path='/static')
-
 app.url_map.strict_slashes = False
+
 app.register_blueprint(pygeoapi_blueprint, url_prefix='/oapi')
 app.register_blueprint(ADMIN_BLUEPRINT, url_prefix='/oapi')
 
-# Generate pygeoapi openapi document
-with open(os.environ.get('PYGEOAPI_CONFIG'), "r") as fh:
-    s = yaml_load(fh)
-with open(os.environ.get('PYGEOAPI_OPENAPI'), "w") as fh:
-    safe_dump(get_oas(s), fh, default_flow_style=False)
-
 try:
     from flask_cors import CORS
+
     CORS(app)
 except ImportError:  # CORS needs to be handled by upstream server
     pass

@@ -62,7 +62,8 @@ cd ${PYGEOAPI_HOME}
 find . -type f -name "*.py" | xargs chmod -R 0444
 
 echo "Trying to generate openapi.yml"
-pygeoapi openapi generate ${PYGEOAPI_CONFIG} > ${PYGEOAPI_OPENAPI}
+pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+# pygeoapi openapi validate ${PYGEOAPI_OPENAPI}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 

@@ -69,7 +69,7 @@ def resources():
         return get_response(admin_.resources(request))
 
     elif request.method == 'POST':
-        return get_response(admin_.add_resource(request))
+        return get_response(admin_.post_resource(request))
 
 
 @ADMIN_BLUEPRINT.route(

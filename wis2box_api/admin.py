@@ -19,10 +19,12 @@
 #
 ###############################################################################
 
+from copy import deepcopy
 import fcntl
 import os
 import json
 import json_merge_patch
+from jsonschema.exceptions import ValidationError
 import logging
 from typing import Any, Tuple, Union
 import yaml
@@ -40,7 +42,7 @@ LOGGER = logging.getLogger(__name__)
 class Admin(API):
     """Admin object"""
 
-    PYGEOAPI_CONFIG = os.environ.get("WIS2BOX_API_CONFIG")
+    PYGEOAPI_CONFIG = os.environ.get("PYGEOAPI_CONFIG")
     PYGEOAPI_OPENAPI = os.environ.get("PYGEOAPI_OPENAPI")
 
     def __init__(self, config):
@@ -54,29 +56,37 @@ class Admin(API):
 
         super().__init__(config)
 
-    def validate(self):
+    def validate(self, config):
         """
         Validate pygeoapi configuration and open api to file
+
+        :param config: configuration dict
         """
         # validate pygeoapi configuration
-        validate_config(self.config)
+        LOGGER.debug('Validating configuration')
+        validate_config(config)
         # validate open api document
-        oas = get_oas(self.config)
+        LOGGER.debug('Validating openapi document')
+        oas = get_oas(config)
         validate_openapi_document(oas)
 
-    def write(self):
+    def write(self, config):
         """
         Write pygeoapi configuration and open api to file
-        """
-        self.write_config()
-        self.write_oas()
 
-    def write_config(self):
+        :param config: configuration dict
+        """
+        self.write_config(config)
+        self.write_oas(config)
+
+    def write_config(self, config):
         """
         Write pygeoapi configuration file
+
+        :param config: configuration dict
         """
         # validate pygeoapi configuration
-        # validate_config(self.config)
+        validate_config(config)
 
         # write pygeoapi configuration
         LOGGER.debug('Writing configutation')
@@ -84,20 +94,22 @@ class Admin(API):
             fcntl.lockf(fh, fcntl.LOCK_EX)
 
             yaml.safe_dump(
-                self.config,
+                config,
                 fh,
                 sort_keys=False,
                 default_flow_style=False,
             )
         LOGGER.debug('Finished writing configutation')
 
-    def write_oas(self):
+    def write_oas(self, config):
         """
         Write pygeoapi open api document
+
+        :param config: configuration dict
         """
         # validate open api document
-        oas = get_oas(self.config)
-        # validate_openapi_document(oas)
+        oas = get_oas(config)
+        validate_openapi_document(oas)
 
         # write open api document
         LOGGER.debug('Writing open api document')
@@ -166,11 +178,11 @@ class Admin(API):
         return headers, 200, content
 
     @pre_process
-    def add_resource(
+    def post_resource(
         self, request: Union[APIRequest, Any]
     ) -> Tuple[dict, int, str]:
         """
-        Post resource configuration
+        Add resource configuration
 
         :param request: A request object
 
@@ -180,6 +192,7 @@ class Admin(API):
         if not request.is_valid():
             return self.get_format_exception(request)
 
+        config = deepcopy(self.config)
         headers = request.get_response_headers()
 
         data = request.data
@@ -206,9 +219,8 @@ class Admin(API):
             )
 
         resource_id = next(iter(data.keys()))
-        LOGGER.debug(f'Adding resource: {resource_id}')
 
-        if self.config['resources'].get(resource_id) is not None:
+        if config['resources'].get(resource_id) is not None:
             # Resource already exists
             msg = f'Resource exists: {resource_id}'
             LOGGER.error(msg)
@@ -216,10 +228,24 @@ class Admin(API):
                 400, headers, request.format, 'NoApplicableCode', msg
             )
 
-        self.config['resources'].update(data)
-        self.write()
+        LOGGER.debug(f'Adding resource: {resource_id}')
+        config['resources'].update(data)
 
-        return headers, 200, data
+        try:
+            self.validate(config)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
+            )
+
+        self.write(config)
+
+        LOGGER.error(request.path_info)
+        content = f'Location: /{request.path_info}/{resource_id}'
+
+        return headers, 201, content
 
     @pre_process
     def get_resource(
@@ -272,11 +298,12 @@ class Admin(API):
         if not request.is_valid():
             return self.get_format_exception(request)
 
+        config = deepcopy(self.config)
         headers = request.get_response_headers()
 
         try:
             LOGGER.debug(f'Removing resource configuration for: {resource_id}')
-            self.config['resources'].pop(resource_id)
+            config['resources'].pop(resource_id)
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
@@ -284,13 +311,22 @@ class Admin(API):
             )
 
         LOGGER.debug('Resource removed, validating and saving configuration')
-        self.write()
+        try:
+            self.validate(config)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
+            )
 
-        return headers, 204, None
+        self.write(config)
+
+        return headers, 204, {}
 
     @pre_process
     def put_resource(
-        self, request: Union[APIRequest, Any], resource_id: str
+        self, request: Union[APIRequest, Any], resource_id: str,
     ) -> Tuple[dict, int, str]:
         """
         Update complete resource configuration
@@ -304,11 +340,12 @@ class Admin(API):
         if not request.is_valid():
             return self.get_format_exception(request)
 
+        config = deepcopy(self.config)
         headers = request.get_response_headers()
 
         try:
             LOGGER.debug('Verifying resource exists')
-            self.config['resources'][resource_id]
+            config['resources'][resource_id]
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
@@ -339,12 +376,20 @@ class Admin(API):
             )
 
         LOGGER.debug('Updating resource')
-        self.config.update({resource_id: data})
+        config['resources'].update({resource_id: data})
 
-        LOGGER.debug('Saving configuration')
-        self.write()
+        try:
+            self.validate(config)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
+            )
 
-        return headers, 204, None
+        self.write(config)
+
+        return headers, 204, {}
 
     @pre_process
     def patch_resource(
@@ -362,11 +407,12 @@ class Admin(API):
         if not request.is_valid():
             return self.get_format_exception(request)
 
+        config = deepcopy(self.config)
         headers = request.get_response_headers()
 
         try:
             LOGGER.debug('Verifying resource exists')
-            resource = self.config['resources'][resource_id]
+            resource = config['resources'][resource_id]
         except KeyError:
             msg = f'Resource not found: {resource_id}'
             return self.get_exception(
@@ -399,16 +445,19 @@ class Admin(API):
         LOGGER.debug('Merging resource block')
         data = json_merge_patch.merge(resource, data)
         LOGGER.debug('Updating resource')
-        self.config.update({resource_id: data})
+        config.update({resource_id: data})
 
-        LOGGER.debug('Saving configuration')
-        self.write()
-
-        if request.format == F_HTML:
-            content = render_j2_template(
-                self.config, 'admin/index.html', resource, request.locale
+        try:
+            self.validate(config)
+        except ValidationError as err:
+            LOGGER.error(err)
+            msg = 'Schema validation error'
+            return self.get_exception(
+                400, headers, request.format, 'ValidationError', msg
             )
-        else:
-            content = to_json(resource, self.pretty_print)
+
+        self.write(config)
+
+        content = to_json(resource, self.pretty_print)
 
         return headers, 200, content

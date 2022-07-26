@@ -445,7 +445,7 @@ class Admin(API):
         LOGGER.debug('Merging resource block')
         data = json_merge_patch.merge(resource, data)
         LOGGER.debug('Updating resource')
-        config.update({resource_id: data})
+        config['resources'].update({resource_id: data})
 
         try:
             self.validate(config)

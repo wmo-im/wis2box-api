@@ -1,2 +1,3 @@
 elasticsearch<8
 flask-cors
+json-merge-patch

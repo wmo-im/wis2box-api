@@ -20,12 +20,13 @@
 ###############################################################################
 
 from copy import deepcopy
-import fcntl
 import os
 import json
 import json_merge_patch
 from jsonschema.exceptions import ValidationError
 import logging
+import shutil
+import tempfile
 from typing import Any, Tuple, Union
 import yaml
 
@@ -59,14 +60,14 @@ class Admin(API):
 
     def validate(self, config):
         """
-        Validate pygeoapi configuration and open api to file
+        Validate pygeoapi configuration and OpenAPI to file
 
         :param config: configuration dict
         """
         # validate pygeoapi configuration
         LOGGER.debug('Validating configuration')
         validate_config(config)
-        # validate open api document
+        # validate OpenAPI document
         LOGGER.debug('Validating openapi document')
         # oas = get_oas(config)
         # validate_openapi_document(oas)
@@ -74,7 +75,7 @@ class Admin(API):
 
     def write(self, config):
         """
-        Write pygeoapi configuration and open api to file
+        Write pygeoapi configuration and OpenAPI to file
 
         :param config: configuration dict
         """
@@ -87,44 +88,53 @@ class Admin(API):
 
         :param config: configuration dict
         """
+
         # validate pygeoapi configuration
         validate_config(config)
 
         # write pygeoapi configuration
-        LOGGER.debug('Writing configutation')
-        with open(self.PYGEOAPI_CONFIG, "w") as fh:
-            fcntl.lockf(fh, fcntl.LOCK_EX)
-
-            yaml.safe_dump(
-                config,
-                fh,
-                sort_keys=False,
-                default_flow_style=False,
-            )
-        LOGGER.debug('Finished writing configutation')
+        LOGGER.debug('Writing pygeoapi configutation')
+        self.yaml_dump(config, self.PYGEOAPI_CONFIG)
+        LOGGER.debug('Finished writing pygeoapiconfigutation')
 
     def write_oas(self, config):
         """
-        Write pygeoapi open api document
+        Write pygeoapi OpenAPI document
 
         :param config: configuration dict
         """
-        # validate open api document
+
+        # validate OpenAPI document
         oas = get_oas(config)
         # validate_openapi_document(oas)
 
-        # write open api document
-        LOGGER.debug('Writing open api document')
-        with open(self.PYGEOAPI_OPENAPI, "w") as fh:
-            fcntl.lockf(fh, fcntl.LOCK_EX)
+        # write OpenAPI document
+        LOGGER.debug('Writing OpenAPI document')
+        self.yaml_dump(oas, self.PYGEOAPI_OPENAPI)
+        LOGGER.debug('Finished writing OpenAPI document')
 
-            yaml.safe_dump(
-                oas,
-                fh,
-                sort_keys=False,
-                default_flow_style=False,
-            )
-        LOGGER.debug('Finished writing open api document')
+    def yaml_dump(self, dict_, destfile) -> bool:
+        """
+        Dump dict to YAML file
+
+        :param dict_: `dict` to dump
+        :param destfile: destination filepath
+
+        :returns: `bool`
+        """
+
+        temp_filename = None
+
+        LOGGER.debug('Dumping YAML document')
+        with tempfile.NamedTemporaryFile(delete=False) as fh:
+            temp_filename = fh.name
+            yaml.safe_dump(dict_, fh, sort_keys=False,
+                           default_flow_style=False)
+
+        LOGGER.debug(f'Moving {temp_filename} to {destfile}')
+        shutil.move(temp_filename, destfile)
+
+        return True
 
     @pre_process
     def admin(self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:

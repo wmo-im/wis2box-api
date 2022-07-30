@@ -32,7 +32,8 @@ import yaml
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 
 from pygeoapi.config import validate_config
-from pygeoapi.openapi import get_oas, validate_openapi_document
+from pygeoapi.openapi import get_oas
+# from pygeoapi.openapi import validate_openapi_document
 from pygeoapi.util import to_json, render_j2_template
 
 
@@ -67,8 +68,9 @@ class Admin(API):
         validate_config(config)
         # validate open api document
         LOGGER.debug('Validating openapi document')
-        oas = get_oas(config)
-        validate_openapi_document(oas)
+        # oas = get_oas(config)
+        # validate_openapi_document(oas)
+        return True
 
     def write(self, config):
         """
@@ -109,7 +111,7 @@ class Admin(API):
         """
         # validate open api document
         oas = get_oas(config)
-        validate_openapi_document(oas)
+        # validate_openapi_document(oas)
 
         # write open api document
         LOGGER.debug('Writing open api document')
@@ -326,7 +328,9 @@ class Admin(API):
 
     @pre_process
     def put_resource(
-        self, request: Union[APIRequest, Any], resource_id: str,
+        self,
+        request: Union[APIRequest, Any],
+        resource_id: str,
     ) -> Tuple[dict, int, str]:
         """
         Update complete resource configuration

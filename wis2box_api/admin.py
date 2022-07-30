@@ -67,8 +67,9 @@ class Admin(API):
         validate_config(config)
         # validate open api document
         LOGGER.debug('Validating openapi document')
-        oas = get_oas(config)
-        validate_openapi_document(oas)
+        # oas = get_oas(config)
+        # validate_openapi_document(oas)
+        return True
 
     def write(self, config):
         """
@@ -109,7 +110,7 @@ class Admin(API):
         """
         # validate open api document
         oas = get_oas(config)
-        validate_openapi_document(oas)
+        # validate_openapi_document(oas)
 
         # write open api document
         LOGGER.debug('Writing open api document')

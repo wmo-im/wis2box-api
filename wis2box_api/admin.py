@@ -128,7 +128,7 @@ class Admin(API):
         LOGGER.debug('Dumping YAML document')
         with tempfile.NamedTemporaryFile(delete=False) as fh:
             temp_filename = fh.name
-            yaml.safe_dump(dict_, fh, sort_keys=False,
+            yaml.safe_dump(dict_, fh, sort_keys=False, encoding='utf8',
                            default_flow_style=False)
 
         LOGGER.debug(f'Moving {temp_filename} to {destfile}')

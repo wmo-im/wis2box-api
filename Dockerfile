@@ -23,12 +23,12 @@ FROM geopython/pygeoapi:latest
 
 RUN apt-get update -y && apt-get install curl -y
 
-ENV PYGEOAPI_CONFIG=/pygeoapi/local.config.yml
-ENV PYGEOAPI_OPENAPI=/pygeoapi/local.openapi.yml
+ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
+ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
-COPY ./docker/pygeoapi-config.yml /pygeoapi/local.config.yml
+COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
     && python3 setup.py install \

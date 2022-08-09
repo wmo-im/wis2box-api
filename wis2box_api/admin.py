@@ -254,8 +254,8 @@ class Admin(API):
 
         self.write(config)
 
-        LOGGER.error(request.path_info)
         content = f'Location: /{request.path_info}/{resource_id}'
+        LOGGER.debug(f'Success at {content}')
 
         return headers, 201, content
 

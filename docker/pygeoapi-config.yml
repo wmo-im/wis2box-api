@@ -8,7 +8,7 @@ server:
     languages:
         - en-US
     pretty_print: false
-    limit: 10
+    limit: 500
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'

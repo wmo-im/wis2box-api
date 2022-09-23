@@ -92,6 +92,11 @@ class Admin(API):
         # validate pygeoapi configuration
         validate_config(config)
 
+        with open(self.PYGEOAPI_CONFIG, encoding='utf8') as fh:
+            conf = yaml.safe_load(fh)
+
+        config = json_merge_patch.merge(config, conf)
+
         # write pygeoapi configuration
         LOGGER.debug('Writing pygeoapi configutation')
         self.yaml_dump(config, self.PYGEOAPI_CONFIG)

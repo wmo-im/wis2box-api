@@ -10,8 +10,8 @@ server:
     pretty_print: false
     limit: 500
     map:
-        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        url: ${WIS2BOX_BASEMAP_URL}
+        attribution: ${WIS2BOX_BASEMAP_ATTRIBUTION}
     templates:
         path: /pygeoapi/pygeoapi/templates
 

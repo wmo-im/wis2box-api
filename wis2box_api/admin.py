@@ -146,7 +146,7 @@ class Admin(API):
         """
         Provide admin document
 
-        :param request: A request object
+        :param request: request object
 
         :returns: tuple of headers, status code, content
         """
@@ -172,7 +172,7 @@ class Admin(API):
         """
         Provide admin document
 
-        :param request: A request object
+        :param request: request object
 
         :returns: tuple of headers, status code, content
         """
@@ -201,7 +201,7 @@ class Admin(API):
         """
         Add resource configuration
 
-        :param request: A request object
+        :param request: request object
 
         :returns: tuple of headers, status code, content
         """
@@ -271,7 +271,7 @@ class Admin(API):
         """
         Get resource configuration
 
-        :param request: A request object
+        :param request: request object
         :param resource_id:
 
         :returns: tuple of headers, status code, content
@@ -306,7 +306,7 @@ class Admin(API):
         """
         Delete resource configuration
 
-        :param request: A request object
+        :param request: request object
         :param resource_id: resource identifier
 
         :returns: tuple of headers, status code, content
@@ -350,7 +350,7 @@ class Admin(API):
         """
         Update complete resource configuration
 
-        :param request: A request object
+        :param request: request object
         :param resource_id: resource identifier
 
         :returns: tuple of headers, status code, content
@@ -417,7 +417,7 @@ class Admin(API):
         """
         Update partial resource configuration
 
-        :param request: A request object
+        :param request: request object
         :param resource_id: resource identifier
 
         :returns: tuple of headers, status code, content

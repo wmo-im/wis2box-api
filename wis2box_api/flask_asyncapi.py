@@ -19,26 +19,40 @@
 #
 ###############################################################################
 
-from flask import Flask, redirect
-from pygeoapi.flask_app import BLUEPRINT as pygeoapi_blueprint
+import os
+import logging
 
-from wis2box_api.flask_admin import ADMIN_BLUEPRINT
-from wis2box_api.flask_asyncapi import ASYNCAPI_BLUEPRINT
+from flask import Blueprint, request
 
-app = Flask(__name__, static_url_path='/static')
-app.url_map.strict_slashes = False
+from pygeoapi.flask_app import get_response
+from pygeoapi.util import yaml_load
 
-app.register_blueprint(ASYNCAPI_BLUEPRINT, url_prefix='/asyncapi')
-app.register_blueprint(pygeoapi_blueprint, url_prefix='/oapi')
-app.register_blueprint(ADMIN_BLUEPRINT, url_prefix='/oapi')
+from wis2box_api.asyncapi import AsyncAPI
 
-try:
-    from flask_cors import CORS
-    CORS(app)
-except ImportError:  # CORS needs to be handled by upstream server
-    pass
+LOGGER = logging.getLogger(__name__)
+
+CONFIG = None
+
+if 'PYGEOAPI_CONFIG' not in os.environ:
+    raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+
+with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+    CONFIG = yaml_load(fh)
+
+asyncapi_ = AsyncAPI(CONFIG)
+
+ASYNCAPI_BLUEPRINT = Blueprint(
+    'asyncapi',
+    __name__
+)
 
 
-@app.route('/')
+@ASYNCAPI_BLUEPRINT.route('/')
 def home():
-    return redirect('https://docs.wis2box.wis.wmo.int', code=302)
+    """
+    AsyncAPI endpoint
+
+    :returns: HTTP response
+    """
+
+    return get_response(asyncapi_.get_asyncapi(request))

@@ -86,3 +86,7 @@ resources:
               data: ${WIS2BOX_DATADIR}/data
               file_types:
                   - .bufr4
+    station-info:
+        type: process
+        processor:
+            name: wis2box_api.station_info.StationInfoProcessor

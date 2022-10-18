@@ -138,39 +138,39 @@ class StationInfoProcessor(BaseProcessor):
         mimetype = 'application/json'
         outputs = {
             'id': 'path',
-            'code': 'failure',
+            'code': 'success',
             'value': None,
         }
 
         try:
             collection_id = data['collection']
-            index = collection_id.lower().rstrip('.') + '.*'
+            index = collection_id.lower()
         except KeyError:
-            outputs['value'] = 'Collection id required'
-            return mimetype, outputs
+            msg = 'Collection id required'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
 
         wigos_station_identifiers = data.get('wigos_station_identifier', [])
         if isinstance(wigos_station_identifiers, list) is False:
-            outputs['value'] = 'wigos_station_identifier must be an array'
-            return mimetype, outputs
+            msg = 'wigos_station_identifier must be an array'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
 
         days = data.get('days', 1) + (data.get('years', 0) * 365)
         date_offset = (datetime.utcnow() - timedelta(days=days)).isoformat()
 
         if CONFIG['resources'].get('stations') is None:
-            outputs['value'] = 'Stations collection does not exist'
-            return mimetype, outputs
+            msg = 'stations collection does not exist'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
 
         fc = self._load_stations(wigos_station_identifiers)
         if None in fc['features']:
-            outputs['value'] = 'Invalid WIGOS station identifier provided'
-            return mimetype, outputs
-
-        outputs = {
-            'id': 'path',
-            'code': 'success',
-            'value': fc,
-        }
+            msg = 'Invalid WIGOS station identifier provided'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+        else:
+            outputs['value'] = fc
 
         for station in outputs['value']['features']:
             query = {
@@ -200,6 +200,7 @@ class StationInfoProcessor(BaseProcessor):
             }
 
             response = self.es.search(index=index, body=query)
+            LOGGER.error(response)
             hits = len(response['aggregations']['count']['buckets'])
             station['properties']['num_obs'] = hits
 

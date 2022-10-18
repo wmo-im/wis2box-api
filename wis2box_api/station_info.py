@@ -200,7 +200,6 @@ class StationInfoProcessor(BaseProcessor):
             }
 
             response = self.es.search(index=index, body=query)
-            LOGGER.error(response)
             hits = len(response['aggregations']['count']['buckets'])
             station['properties']['num_obs'] = hits
 
@@ -222,8 +221,13 @@ class StationInfoProcessor(BaseProcessor):
                     fc['features'].append(None)
 
         else:
+            r = requests.get(
+                stations_url, params={'resulttype': 'hits'}
+            ).json()
 
-            fc = requests.get(stations_url).json()
+            fc = requests.get(
+                stations_url, params={'limit': r['numberMatched']}
+            ).json()
 
         return fc
 

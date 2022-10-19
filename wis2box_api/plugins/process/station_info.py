@@ -108,7 +108,7 @@ class StationInfoProcessor(BaseProcessor):
         """
         Initialize object
         :param processor_def: provider definition
-        :returns: pygeoapi.process.station_info.StationInfoProcessor
+        :returns: wis2box_api.plugins.process.station_info.StationInfoProcessor
         """
         super().__init__(processor_def, PROCESS_DEF)
 

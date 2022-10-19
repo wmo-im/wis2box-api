@@ -172,36 +172,46 @@ class StationInfoProcessor(BaseProcessor):
         else:
             outputs['value'] = fc
 
-        for station in outputs['value']['features']:
-            query = {
-                'size': 0,
-                'query': {
-                    'bool': {
-                        'filter': [
-                            {
-                                'match': {
-                                    'properties.wigos_station_identifier': {
-                                        'query': station['id'],
-                                        'minimum_should_match': '100%',
-                                    }
+        query = {
+            'size': 0,
+            'query': {
+                'bool': {
+                    'filter': [
+                        {
+                            'range': {
+                                'properties.resultTime.raw': {
+                                    'gte': date_offset
                                 }
-                            },
-                            {
-                                'range': {
-                                    'properties.resultTime.raw': {
-                                        'gte': date_offset
-                                    }
-                                }
-                            },
-                        ]
-                    },
+                            }
+                        },
+                    ]
                 },
-                'aggs': {'count': {'terms': {'field': 'reportId.raw'}}},
-            }
+            },
+            'aggs': {
+                'count': {
+                    'terms': {
+                        'field': 'properties.wigos_station_identifier.raw',
+                        "size": 64000,
+                    },
+                    'aggs': {
+                        'sum': {
+                            'terms': {
+                                'field': 'reportId.raw',
+                                "size": 64000,
+                            }
+                        }
+                    },
+                }
+            },
+        }
 
-            response = self.es.search(index=index, body=query)
-            hits = len(response['aggregations']['count']['buckets'])
-            station['properties']['num_obs'] = hits
+        response = self.es.search(index=index, body=query)
+        hits = {}
+        for b in response['aggregations']['count']['buckets']:
+            hits[b['key']] = len(b['sum']['buckets'])
+
+        for station in outputs['value']['features']:
+            station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 

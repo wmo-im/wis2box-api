@@ -89,4 +89,4 @@ resources:
     station-info:
         type: process
         processor:
-            name: wis2box_api.station_info.StationInfoProcessor
+            name: wis2box_api.plugins.process.station_info.StationInfoProcessor

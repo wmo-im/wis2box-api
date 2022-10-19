@@ -84,7 +84,7 @@ PROCESS_DEF = {
         'path': {
             'title': {'en': 'FeatureCollection'},
             'description': {
-                'en': 'A geoJSON FeatureCollection of the '
+                'en': 'A GeoJSON FeatureCollection of the '
                 'stations with their status'
             },
             'schema': {
@@ -117,15 +117,6 @@ class StationInfoProcessor(BaseProcessor):
 
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
-            LOGGER.error(msg)
-            raise ProcessorExecuteError(msg)
-
-        LOGGER.debug('Checking Elasticsearch version')
-        version = float(self.es.info()['version']['number'][:3])
-        if version < 7:
-            msg = 'Elasticsearch version below 7 not supported ({})'.format(
-                version
-            )
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
@@ -217,7 +208,7 @@ class StationInfoProcessor(BaseProcessor):
             os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
         )
 
-        if wigos_station_identifiers != []:
+        if wigos_station_identifiers:
 
             for wsi in wigos_station_identifiers:
                 r = requests.get(f'{stations_url}/{wsi}')

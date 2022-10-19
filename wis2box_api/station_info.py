@@ -172,43 +172,39 @@ class StationInfoProcessor(BaseProcessor):
         else:
             outputs['value'] = fc
 
-        query = {
-            'size': 0,
-            'query': {
-                'bool': {
-                    'filter': [
-                        {
-                            'range': {
-                                'properties.resultTime.raw': {
-                                    'gte': date_offset
-                                }
-                            }
-                        },
-                    ]
-                },
-            },
-            'aggs': {
-                'count': {
-                    'terms': {
-                        'field': 'properties.wigos_station_identifier.raw',
-                        "size": 64000,
-                    },
-                    'aggs': {
-                        'sum': {
-                            'terms': {
-                                'field': 'reportId.raw',
-                                "size": 64000,
-                            }
+        query_core = {
+            'bool': {
+                'filter': [
+                    {
+                        'range': {
+                            'properties.resultTime.raw': {'gte': date_offset}
                         }
-                    },
-                }
-            },
+                    }
+                ]
+            }
         }
+        query_agg = {
+            'each': {
+                'terms': {
+                    'field': 'properties.wigos_station_identifier.raw',
+                    'size': 64000
+                },
+                'aggs': {
+                    'count': {
+                        'terms': {
+                            'field': 'reportId.raw',
+                            'size': 64000
+                        }
+                    }
+                }
+            }
+        }
+        query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
         response = self.es.search(index=index, body=query)
-        hits = {}
-        for b in response['aggregations']['count']['buckets']:
-            hits[b['key']] = len(b['sum']['buckets'])
+        response_buckets = response['aggregations']['each']['buckets']
+
+        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets}
 
         for station in outputs['value']['features']:
             station['properties']['num_obs'] = hits.get(station['id'], 0)

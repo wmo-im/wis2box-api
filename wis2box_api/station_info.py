@@ -84,7 +84,7 @@ PROCESS_DEF = {
         'path': {
             'title': {'en': 'FeatureCollection'},
             'description': {
-                'en': 'A geoJSON FeatureCollection of the '
+                'en': 'A GeoJSON FeatureCollection of the '
                 'stations with their status'
             },
             'schema': {
@@ -117,15 +117,6 @@ class StationInfoProcessor(BaseProcessor):
 
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
-            LOGGER.error(msg)
-            raise ProcessorExecuteError(msg)
-
-        LOGGER.debug('Checking Elasticsearch version')
-        version = float(self.es.info()['version']['number'][:3])
-        if version < 7:
-            msg = 'Elasticsearch version below 7 not supported ({})'.format(
-                version
-            )
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
@@ -172,36 +163,42 @@ class StationInfoProcessor(BaseProcessor):
         else:
             outputs['value'] = fc
 
-        for station in outputs['value']['features']:
-            query = {
-                'size': 0,
-                'query': {
-                    'bool': {
-                        'filter': [
-                            {
-                                'match': {
-                                    'properties.wigos_station_identifier': {
-                                        'query': station['id'],
-                                        'minimum_should_match': '100%',
-                                    }
-                                }
-                            },
-                            {
-                                'range': {
-                                    'properties.resultTime.raw': {
-                                        'gte': date_offset
-                                    }
-                                }
-                            },
-                        ]
-                    },
-                },
-                'aggs': {'count': {'terms': {'field': 'reportId.raw'}}},
+        query_core = {
+            'bool': {
+                'filter': [
+                    {
+                        'range': {
+                            'properties.resultTime.raw': {'gte': date_offset}
+                        }
+                    }
+                ]
             }
+        }
+        query_agg = {
+            'each': {
+                'terms': {
+                    'field': 'properties.wigos_station_identifier.raw',
+                    'size': 64000
+                },
+                'aggs': {
+                    'count': {
+                        'terms': {
+                            'field': 'reportId.raw',
+                            'size': 64000
+                        }
+                    }
+                }
+            }
+        }
+        query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-            response = self.es.search(index=index, body=query)
-            hits = len(response['aggregations']['count']['buckets'])
-            station['properties']['num_obs'] = hits
+        response = self.es.search(index=index, body=query)
+        response_buckets = response['aggregations']['each']['buckets']
+
+        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets}
+
+        for station in outputs['value']['features']:
+            station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 
@@ -211,7 +208,7 @@ class StationInfoProcessor(BaseProcessor):
             os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
         )
 
-        if wigos_station_identifiers != []:
+        if wigos_station_identifiers:
 
             for wsi in wigos_station_identifiers:
                 r = requests.get(f'{stations_url}/{wsi}')

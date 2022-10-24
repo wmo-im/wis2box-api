@@ -50,34 +50,34 @@ PROCESS_DEF = {
             'keywords': {'en': ['collection', 'topic', 'dataset']},
             'schema': {
                 'type': 'string',
-                'default': None,
+                'default': None
             },
             'minOccurs': 1,
             'maxOccurs': 1,
-            'metadata': None,  # TODO how to use?
+            'metadata': None  # TODO how to use?
         },
         'wigos_station_identifier': {
             'title': {'en': 'WIGOS Station Identifier'},
             'schema': {
                 'type': 'array',
                 'minItems': 1,
-                'items': {'type': 'string'},
+                'items': {'type': 'string'}
             },
             'minOccurs': 0,
             'maxOccurs': 1,
-            'metadata': None,  # TODO how to use?
+            'metadata': None  # TODO how to use?
         },
         'days': {
             'title': {'en': 'Days'},
             'schema': {'type': 'number', 'default': 1},
             'minOccurs': 0,
-            'maxOccurs': 1,
+            'maxOccurs': 1
         },
         'years': {
             'title': {'en': 'Years'},
             'schema': {'type': 'number', 'default': 0},
             'minOccurs': 0,
-            'maxOccurs': 1,
+            'maxOccurs': 1
         },
     },
     'outputs': {
@@ -89,15 +89,15 @@ PROCESS_DEF = {
             },
             'schema': {
                 'type': 'object',
-                'contentMediaType': 'application/json',
-            },
+                'contentMediaType': 'application/json'
+            }
         }
     },
     'example': {
         'inputs': {
-            'collection': 'mwi.mwi_met_centre.data.core.weather.surface-based-observations.SYNOP',  # noqa
+            'collection': 'mwi.mwi_met_centre.data.core.weather.surface-based-observations.SYNOP'  # noqa
         }
-    },
+    }
 }
 
 
@@ -179,13 +179,13 @@ class StationInfoProcessor(BaseProcessor):
             'each': {
                 'terms': {
                     'field': 'properties.wigos_station_identifier.raw',
-                    'size': 64000,
+                    'size': 64000
                 },
                 'aggs': {
                     'count': {
                         'terms': {'field': 'reportId.raw', 'size': 64000}
                     }
-                },
+                }
             }
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}

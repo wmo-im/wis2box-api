@@ -148,7 +148,8 @@ class StationInfoProcessor(BaseProcessor):
             raise ProcessorExecuteError(msg)
 
         days = data.get('days', 1) + (data.get('years', 0) * 365)
-        date_offset = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        _time_delta = timedelta(days=days, minutes=59, seconds=59)
+        date_offset = (datetime.utcnow() - _time_delta).isoformat()
 
         if CONFIG['resources'].get('stations') is None:
             msg = 'stations collection does not exist'
@@ -178,16 +179,13 @@ class StationInfoProcessor(BaseProcessor):
             'each': {
                 'terms': {
                     'field': 'properties.wigos_station_identifier.raw',
-                    'size': 64000
+                    'size': 64000,
                 },
                 'aggs': {
                     'count': {
-                        'terms': {
-                            'field': 'reportId.raw',
-                            'size': 64000
-                        }
+                        'terms': {'field': 'reportId.raw', 'size': 64000}
                     }
-                }
+                },
             }
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}

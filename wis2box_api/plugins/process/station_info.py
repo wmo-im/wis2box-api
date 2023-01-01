@@ -25,7 +25,7 @@ import os
 import logging
 import requests
 
-from pygeoapi.util import yaml_load, url_join
+from pygeoapi.util import yaml_load, url_join, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 
@@ -135,7 +135,9 @@ class StationInfoProcessor(BaseProcessor):
 
         try:
             collection_id = data['collection']
-            index = collection_id.lower()
+            collection_config = CONFIG['resources'][collection_id]
+            index_url = collection_config['providers'][0]['data']
+            index = get_path_basename(index_url)
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)

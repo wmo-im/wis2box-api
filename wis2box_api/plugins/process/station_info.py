@@ -95,7 +95,7 @@ PROCESS_DEF = {
     },
     'example': {
         'inputs': {
-            'collection': 'mwi.mwi_met_centre.data.core.weather.surface-based-observations.SYNOP'  # noqa
+            'collection': 'urn:x-wmo:md:mwi:mwi_met_centre:surface-weather-observations'  # noqa
         }
     }
 }
@@ -158,7 +158,7 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        fc = self._load_stations(wigos_station_identifiers)
+        fc = self._load_stations(wigos_station_identifiers, collection_id)
         if None in fc['features']:
             msg = 'Invalid WIGOS station identifier provided'
             LOGGER.error(msg)
@@ -202,7 +202,8 @@ class StationInfoProcessor(BaseProcessor):
 
         return mimetype, outputs
 
-    def _load_stations(self, wigos_station_identifiers: list = []):
+    def _load_stations(self, wigos_station_identifiers: list = [],
+                       collection_id: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
         stations_url = url_join(
             os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
@@ -223,7 +224,8 @@ class StationInfoProcessor(BaseProcessor):
             ).json()
 
             fc = requests.get(
-                stations_url, params={'limit': r['numberMatched']}
+                stations_url, params={
+                    'limit': r['numberMatched'], 'topic': collection_id}
             ).json()
 
         return fc

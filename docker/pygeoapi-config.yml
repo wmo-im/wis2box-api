@@ -16,7 +16,7 @@ server:
         path: /pygeoapi/pygeoapi/templates
 
 logging:
-    level: ERROR
+    level: ${WIS2BOX_LOGGING_LOGLEVEL}
     #logfile: /tmp/pygeoapi.log
 
 metadata:

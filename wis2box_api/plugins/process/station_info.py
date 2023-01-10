@@ -25,7 +25,7 @@ import os
 import logging
 import requests
 
-from pygeoapi.util import yaml_load, url_join
+from pygeoapi.util import yaml_load, url_join, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 
@@ -95,7 +95,7 @@ PROCESS_DEF = {
     },
     'example': {
         'inputs': {
-            'collection': 'mwi.mwi_met_centre.data.core.weather.surface-based-observations.SYNOP'  # noqa
+            'collection': 'urn:x-wmo:md:mwi:mwi_met_centre:surface-weather-observations'  # noqa
         }
     }
 }
@@ -135,7 +135,9 @@ class StationInfoProcessor(BaseProcessor):
 
         try:
             collection_id = data['collection']
-            index = collection_id.lower()
+            collection_config = CONFIG['resources'][collection_id]
+            index_url = collection_config['providers'][0]['data']
+            index = get_path_basename(index_url)
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)
@@ -156,7 +158,7 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        fc = self._load_stations(wigos_station_identifiers)
+        fc = self._load_stations(wigos_station_identifiers, collection_id)
         if None in fc['features']:
             msg = 'Invalid WIGOS station identifier provided'
             LOGGER.error(msg)
@@ -200,7 +202,8 @@ class StationInfoProcessor(BaseProcessor):
 
         return mimetype, outputs
 
-    def _load_stations(self, wigos_station_identifiers: list = []):
+    def _load_stations(self, wigos_station_identifiers: list = [],
+                       collection_id: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
         stations_url = url_join(
             os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
@@ -221,7 +224,8 @@ class StationInfoProcessor(BaseProcessor):
             ).json()
 
             fc = requests.get(
-                stations_url, params={'limit': r['numberMatched']}
+                stations_url, params={
+                    'limit': r['numberMatched'], 'topic': collection_id}
             ).json()
 
         return fc

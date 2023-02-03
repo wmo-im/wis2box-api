@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-FROM geopython/pygeoapi:latest
+FROM geopython/pygeoapi:0.14.0
 
 RUN apt-get update -y && apt-get install curl -y
 

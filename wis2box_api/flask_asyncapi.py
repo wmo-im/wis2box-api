@@ -47,7 +47,7 @@ ASYNCAPI_BLUEPRINT = Blueprint(
 )
 
 
-@ASYNCAPI_BLUEPRINT.route('/')
+@ASYNCAPI_BLUEPRINT.route('/asyncapi')
 def home():
     """
     AsyncAPI endpoint

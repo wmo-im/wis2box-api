@@ -28,7 +28,7 @@ from wis2box_api.flask_asyncapi import ASYNCAPI_BLUEPRINT
 app = Flask(__name__, static_url_path='/static')
 app.url_map.strict_slashes = False
 
-app.register_blueprint(ASYNCAPI_BLUEPRINT, url_prefix='/asyncapi')
+app.register_blueprint(ASYNCAPI_BLUEPRINT, url_prefix='/oapi')
 app.register_blueprint(pygeoapi_blueprint, url_prefix='/oapi')
 app.register_blueprint(ADMIN_BLUEPRINT, url_prefix='/oapi')
 

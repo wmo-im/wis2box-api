@@ -22,6 +22,7 @@
 import os
 import logging
 from typing import Any, Tuple, Union
+from urllib.parse import urlparse
 
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 from pygeoapi import l10n
@@ -64,6 +65,7 @@ class AsyncAPI(API):
             return self.get_format_exception(request)
 
         headers = request.get_response_headers()
+        headers['Content-Type'] = 'application/json'
 
         content = to_json(generate_asyncapi(self.config, request.locale),
                           self.pretty_print)
@@ -96,9 +98,15 @@ def generate_asyncapi(config: dict, locale: str) -> dict:
     description = l10n.translate(config['metadata']['identification']['description'], locale)  # noqa
     tags = l10n.translate(config['metadata']['identification']['keywords'], locale)  # noqa
 
+    url = wis2box_mqtt_url = os.environ.get('WIS2BOX_BROKER_PUBLIC')
+    u = urlparse(wis2box_mqtt_url)
+    auth = f'{u.username}:{u.password}@'
+    url = wis2box_mqtt_url.replace(auth, '')
+
     a = {
-        'asyncapi': '2.4.0',
+        'asyncapi': '2.6.0',
         'id': 'https://github.com/wmo-im/wis2box',
+        'defaultContentType': 'application/json',
         'info': {
             'version': __version__,
             'title': title,
@@ -113,9 +121,20 @@ def generate_asyncapi(config: dict, locale: str) -> dict:
                 'email': config['metadata']['contact']['email']
             }
         },
+        'components': {
+            'operationTraits': {
+                'mqtt': {
+                    'bindings': {
+                        'mqtt': {
+                            'qos': 1
+                        }
+                    }
+                }
+            }
+        },
         'servers': {
             'production': {
-                'url': os.environ.get('WIS2BOX_MQTT_URL'),
+                'url': url,
                 'protocol': 'mqtt',
                 'protocolVersion': '5.0',
                 'description': description
@@ -123,15 +142,22 @@ def generate_asyncapi(config: dict, locale: str) -> dict:
         },
         'channels': {
             'origin/a/wis2': {
+                'description': 'Data notifications',
                 'subscribe': {
-                    'operationId': 'ClientSubscribed',
+                    'operationId': 'Notify',
+                    'traits': [
+                        {'$ref': '#/components/operationTraits/mqtt'}
+                    ],
                     'message': {
-                        '$ref': 'https://raw.githubusercontent.com/wmo-im/wis2-notification-message/main/WIS2_Message_Format_Schema.yaml'  # noqa
+                        '$ref': 'https://raw.githubusercontent.com/wmo-im/wis2-notification-message/main/schemas/notificationMessageGeoJSON.yaml'  # noqa
                     }
                 }
             }
         },
-        'tags': [{'name': tag} for tag in tags]
+        'tags': [{'name': tag} for tag in tags],
+        'externalDocs': {
+            'url': 'https://docs.wis2box.wis.wmo.int'
+        }
     }
 
     return a

@@ -192,7 +192,7 @@ class StationInfoProcessor(BaseProcessor):
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-        response = self.es.search(index=index, body=query)
+        response = self.es.search(index=index, **query)
         response_buckets = response['aggregations']['each']['buckets']
 
         hits = {b['key']: len(b['count']['buckets']) for b in response_buckets}

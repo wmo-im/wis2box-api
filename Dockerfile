@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-FROM geopython/pygeoapi:0.14.0
+FROM geopython/pygeoapi:latest
 
 RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
 

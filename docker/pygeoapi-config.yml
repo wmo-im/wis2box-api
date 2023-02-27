@@ -90,3 +90,23 @@ resources:
         type: process
         processor:
             name: wis2box_api.plugins.process.station_info.StationInfoProcessor
+
+    pygeometa-metadata-generate:
+        type: process
+        processor:
+            name: pygeometa.pygeoapi_plugin.PygeometaMetadataGenerateProcessor
+
+    pywcmp-wis2-topics-list:
+        type: process
+        processor:
+            name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyListTopicsProcessor
+
+    pywcmp-wis2-topics-validate:
+        type: process
+        processor:
+            name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor
+
+    pywcmp-wis2-wcmp2-ets:
+        type: process
+        processor:
+            name: pywcmp.pygeoapi_plugin.WCMP2ETSProcessor

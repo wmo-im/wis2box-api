@@ -1,3 +1,4 @@
-elasticsearch<8
+elasticsearch
 flask-cors
 json-merge-patch
+pygeometa

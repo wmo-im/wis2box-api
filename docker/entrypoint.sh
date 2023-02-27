@@ -40,43 +40,51 @@ entry_cmd=${1:-run}
 
 # Shorthand
 function error() {
-	echo "ERROR: $@"
-	exit -1
+    echo "ERROR: $@"
+    exit -1
 }
 
 # Workdir
 cd /pygeoapi
 
-# Lock all python files (for gunicorn hot reload)
+# Lock all Python files (for gunicorn hot reload)
 find . -type f -name "*.py" | xargs chmod -R 0444
 
-echo "Trying to generate openapi.yml"
+echo "Caching topic hierarchy JSON"
+mkdir -p ~/.pywcmp/wis2-topic-hierarchy
+curl --output-dir /tmp -O https://wmo-im.github.io/wis2-topic-hierarchy/all.json.zip
+cd ~/.pywcmp/wis2-topic-hierarchy && unzip -j /tmp/all.json.zip
+
+echo "Caching WCMP2 schema"
+mkdir ~/.pywcmp/wcmp-2 && curl --output-dir ~/.pywcmp/wcmp-2 -O https://raw.githubusercontent.com/wmo-im/wcmp2/main/schemas/wcmp2-bundled.json
+
+echo "Trying to generate OpenAPI document"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
 # pygeoapi openapi validate ${PYGEOAPI_OPENAPI}
 
-[[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
+[[ $? -ne 0 ]] && error "ERROR: OpenAPI document could not be generated"
 
 echo "openapi.yml generated continue to pygeoapi"
 
 case ${entry_cmd} in
-	# Run pygeoapi server
-	run)
-		# SCRIPT_NAME should not have value '/'
-		[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
+    # Run pygeoapi server
+    run)
+        # SCRIPT_NAME should not have value '/'
+        [[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
 
-		echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
-		exec gunicorn --workers ${WSGI_WORKERS} \
-				--worker-class=${WSGI_WORKER_CLASS} \
-				--timeout ${WSGI_WORKER_TIMEOUT} \
-				--name=${CONTAINER_NAME} \
-				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-				--reload \
-				--reload-extra-file ${PYGEOAPI_CONFIG} \
-				wis2box_api.app:app
-	  ;;
-	*)
-	  error "unknown command arg: must be run (default) or test"
-	  ;;
+        echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
+        exec gunicorn --workers ${WSGI_WORKERS} \
+                --worker-class=${WSGI_WORKER_CLASS} \
+                --timeout ${WSGI_WORKER_TIMEOUT} \
+                --name=${CONTAINER_NAME} \
+                --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
+                --reload \
+                --reload-extra-file ${PYGEOAPI_CONFIG} \
+                wis2box_api.app:app
+      ;;
+    *)
+      error "unknown command arg: must be run (default)"
+      ;;
 esac
 
 echo "END /entrypoint.sh"

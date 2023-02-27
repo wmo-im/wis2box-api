@@ -19,9 +19,9 @@
 #
 ###############################################################################
 
-FROM geopython/pygeoapi:0.14.0
+FROM geopython/pygeoapi:latest
 
-RUN apt-get update -y && apt-get install curl -y
+RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
 
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
@@ -32,6 +32,7 @@ COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
     && python3 setup.py install \
+    && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

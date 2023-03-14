@@ -110,3 +110,8 @@ resources:
         type: process
         processor:
             name: pywcmp.pygeoapi_plugin.WCMP2ETSProcessor
+
+    wmo-get-ra:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor

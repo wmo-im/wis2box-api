@@ -112,7 +112,7 @@ class WMORAProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        driver = ogr.GetDriverByName("GeoJSON")
+        driver = ogr.GetDriverByName('GeoJSON')
         dataSource = driver.Open(wmo_ra_geojson, 0)
         layer = dataSource.GetLayer()
 
@@ -126,7 +126,7 @@ class WMORAProcessor(BaseProcessor):
 
         for feature in layer:
             if geometry.Intersects(feature.GetGeometryRef()):
-                outputs['wmo-ra'].append(feature.GetField("roman_num"))
+                outputs['wmo-ra'].append(feature.GetField('roman_num'))
 
         return mimetype, outputs
 

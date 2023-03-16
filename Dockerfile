@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-FROM geopython/pygeoapi:latest
+FROM geopython/pygeoapi:0.13.0
 
 RUN apt-get update -y && apt-get install curl -y
 
@@ -28,6 +28,7 @@ ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
+COPY wis2box_api/templates/collections/items/index.html /pygeoapi/pygeoapi/templates/collections/items/index.html
 COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \

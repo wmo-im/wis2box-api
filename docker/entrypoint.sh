@@ -58,6 +58,9 @@ cd ~/.pywcmp/wis2-topic-hierarchy && unzip -j /tmp/all.json.zip
 echo "Caching WCMP2 schema"
 mkdir ~/.pywcmp/wcmp-2 && curl --output-dir ~/.pywcmp/wcmp-2 -O https://raw.githubusercontent.com/wmo-im/wcmp2/main/schemas/wcmp2-bundled.json
 
+echo "Caching WMO RA GeoJSON"
+curl -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
+
 echo "Trying to generate OpenAPI document"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
 # pygeoapi openapi validate ${PYGEOAPI_OPENAPI}

@@ -107,9 +107,12 @@ class StationInfoProcessor(BaseProcessor):
     def __init__(self, processor_def):
         """
         Initialize object
+
         :param processor_def: provider definition
+
         :returns: wis2box_api.plugins.process.station_info.StationInfoProcessor
         """
+
         super().__init__(processor_def, PROCESS_DEF)
 
         host = os.environ['WIS2BOX_API_BACKEND_URL']
@@ -122,10 +125,13 @@ class StationInfoProcessor(BaseProcessor):
 
     def execute(self, data):
         """
-        Execute River Runner Process
+        Execute Process
+
         :param data: processor arguments
+
         :returns: 'application/json'
         """
+
         mimetype = 'application/json'
         outputs = {
             'id': 'path',

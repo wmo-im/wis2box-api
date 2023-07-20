@@ -18,8 +18,7 @@
 # under the License.
 #
 ###############################################################################
-
-FROM geopython/pygeoapi:latest
+FROM wmoim/dim_eccodes_baseimage:2.28.0
 
 RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
 
@@ -32,7 +31,9 @@ COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
     && python3 setup.py install \
+    && pip3 install git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
+    && pip3 install --no-cache-dir https://github.com/david-i-berry/wis2box-api-plugin-synop/archive/refs/tags/v0.1.0.tar.gz \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

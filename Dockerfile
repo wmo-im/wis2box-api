@@ -35,7 +35,7 @@ RUN cd /app \
     && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && pip3 install --no-cache-dir https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.7.zip \
     && pip3 install --no-cache-dir https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.5.0.tar.gz \
-    && pip3 install --no-cache-dir https://github.com/david-i-berry/wis2box-api-plugin-synop/archive/refs/tags/v0.1.0.tar.gz \
+    && pip3 install --no-cache-dir https://github.com/david-i-berry/wis2box-api-plugin-synop/archive/main.zip \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

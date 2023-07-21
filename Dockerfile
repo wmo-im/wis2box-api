@@ -20,10 +20,13 @@
 ###############################################################################
 FROM wmoim/dim_eccodes_baseimage:2.28.0
 
-RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
-
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
+
+RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
+RUN apt-get install -y --no-install-recommends \
+    libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
@@ -36,7 +39,6 @@ RUN cd /app \
     && pip3 install --no-cache-dir https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.7.zip \
     && pip3 install --no-cache-dir https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.5.0.tar.gz \
     && pip3 install --no-cache-dir https://github.com/david-i-berry/wis2box-api-plugin-synop/archive/main.zip \
-    && pip3 install osgeo elasticsearch \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

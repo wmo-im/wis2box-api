@@ -1,9 +1,6 @@
-name: Basic test (build and run)
+name: docker-compose-test
 
-on:
-  push:
-    branches:
-      - main
+on: [ push, pull_request ]
 
 jobs:
   build:
@@ -13,17 +10,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker environment
-        uses: docker/setup-docker@v1
-
-      - name: Build Docker Compose services
-        run: docker-compose -f test/docker-compose.yml build
-
-      - name: Start Docker Compose services
-        run: docker-compose -f test/docker-compose.yml up -d
+      - name: Build and Start Docker Compose services
+        run:
+          cd docker_compose_test && \
+          docker-compose up -d --build
 
       - name: Wait for service to be ready
-        run: sleep 10 
+        run: sleep 5 
 
       - name: Check status code
         run: |

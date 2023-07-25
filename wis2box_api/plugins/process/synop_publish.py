@@ -11,15 +11,13 @@
 #   http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on anRedondo Beach, California, USA
+# software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
 #
 ###############################################################################
-__version__ = "0.1.dev"
-
 import csv
 from datetime import datetime as dt
 import hashlib
@@ -29,7 +27,7 @@ import logging
 from minio import Minio
 import os
 import paho.mqtt.publish as publish
-from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
+from pygeoapi.process.base import BaseProcessor
 import requests
 import uuid
 
@@ -123,6 +121,7 @@ STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
 API_URL = os.environ.get('WIS2BOX_API_URL').rstrip('/')
 LOGGER.debug(API_URL)
 
+
 class SynopProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
@@ -161,7 +160,7 @@ class SynopProcessor(BaseProcessor):
                            secret_key=STORAGE_PASSWORD,
                            secure=is_secure)
         except Exception as e:
-            msg = f"Error connecting to MinIO: {e}"	
+            msg = f"Error connecting to MinIO: {e}"
             return self._handle_error(msg)
 
         # Second get list of all stations in CSV
@@ -195,7 +194,7 @@ class SynopProcessor(BaseProcessor):
             for result in bufr_generator:
                 bufr.append(result)
                 synop_converted += 1
-                LOGGER.debug(f"result: {result}")
+                LOGGER.info(f"result: {result}")
 
         except Exception as e:
             LOGGER.error(e)
@@ -219,10 +218,11 @@ class SynopProcessor(BaseProcessor):
                     continue
                 storage_url = f'{STORAGE_SOURCE}/{STORAGE_PUBLIC}/{channel}/{identifier}.{fmt}'  # noqa
                 storage_path = f'{channel}/{identifier}.{fmt}'
-                client.put_object(bucket_name=STORAGE_PUBLIC,
-                           object_name=storage_path,
-                           data=io.BytesIO(the_data), length=-1,
-                           part_size=10 * 1024 * 1024)
+                client.put_object(
+                    bucket_name=STORAGE_PUBLIC,
+                    object_name=storage_path,
+                    data=io.BytesIO(the_data), length=-1,
+                    part_size=10 * 1024 * 1024)
 
                 # TODO ask Dave, how could this not be bufr4?
                 if fmt == 'bufr4':
@@ -259,7 +259,7 @@ class SynopProcessor(BaseProcessor):
                                 {
                                     'rel': 'via',
                                     'type': 'text/html',
-                                    'href': f'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/{wsi}'
+                                    'href': f'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/{wsi}' # noqa
                                 }
                             ]
                         }
@@ -274,7 +274,7 @@ class SynopProcessor(BaseProcessor):
                                        payload=json.dumps(msg), qos=1,
                                        retain=False, hostname=BROKER_HOST,
                                        port=int(BROKER_PORT), auth=auth)
-                        LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}")
+                        LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}") # noqa
                         urls.append(storage_url)
                     except Exception as e:
                         LOGGER.error("Error publishing")
@@ -317,7 +317,7 @@ class SynopProcessor(BaseProcessor):
         r = requests.get(stations_url, params={'f': 'json'}).json()
         csv_output = []
         for station in r['features']:
-            wsi= station['properties']['wigos_station_identifier']
+            wsi = station['properties']['wigos_station_identifier']
             tsi = wsi.split("-")[3]
             obj = {
                 'station_name': station['properties']['name'],
@@ -332,7 +332,7 @@ class SynopProcessor(BaseProcessor):
                 'barometer_height': None
             }
             csv_output.append(obj)
-    
+
         string_buffer = io.StringIO()
         csv_writer = csv.DictWriter(string_buffer, fieldnames=csv_output[0].keys())  # noqa
         csv_writer.writeheader()
@@ -342,7 +342,6 @@ class SynopProcessor(BaseProcessor):
         string_buffer.close()
 
         return csv_string
-
 
     def __repr__(self):
         return '<submit> {}'.format(self.name)

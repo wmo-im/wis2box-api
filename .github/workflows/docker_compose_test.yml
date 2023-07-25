@@ -3,16 +3,19 @@ name: docker-compose-test
 on: [ push, pull_request ]
 
 jobs:
-  build:
+  main:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        name: setup Python
+        with:
+          python-version: 3.8    
+      
       - name: Build and Start Docker Compose services
+        working-directory: docker_compose_test
         run:
-          cd docker_compose_test && \
           docker-compose up -d --build
 
       - name: Wait for service to be ready

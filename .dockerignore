@@ -1,2 +1,3 @@
-docker_compose_test/docker-compose.yml
-docker_compose_test/test.env
+docker_compose_test/*
+.github/*
+.gitignore

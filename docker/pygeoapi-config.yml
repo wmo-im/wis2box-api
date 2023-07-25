@@ -115,3 +115,10 @@ resources:
         type: process
         processor:
             name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor
+
+    wis2box-synop-process:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.synop_publish.SynopProcessor
+
+    

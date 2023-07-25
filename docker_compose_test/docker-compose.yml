@@ -1,6 +1,6 @@
 services:
   wis2box-api:
-    container_name: wis2box-api
+    container_name: wis2box-api-test
     env_file:
       - test.env
     build:
@@ -13,19 +13,10 @@ services:
       interval: 5s
       retries: 100
     ports:
-      - "3000:80"
-
-  minio:
-    container_name: wis2box-minio
-    image: minio/minio:RELEASE.2022-12-02T19-19-22Z.fips
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 1s
-      retries: 3
+      - "4343:80"
 
   elasticsearch:
-    container_name: elasticsearch
+    container_name: wis2box-api-test-elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
     environment:
       - discovery.type=single-node

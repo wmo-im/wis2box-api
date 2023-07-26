@@ -99,7 +99,7 @@ PROCESS_METADATA = {
             "channel": "synop/test",
             "year": 2023,
             "month": 1,
-            "data": "AAXX 19064 68399 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=",  # noqa
+            "data": "AAXX 19064 68399 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=" # noqa
         }
     }
 }
@@ -116,6 +116,8 @@ STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
 STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
 STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
 STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
+
+STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 
 # API details
 API_URL = os.environ.get('WIS2BOX_API_URL').rstrip('/')
@@ -163,7 +165,6 @@ class SynopProcessor(BaseProcessor):
             msg = f"Error connecting to MinIO: {e}"
             return self._handle_error(msg)
 
-        # Second get list of all stations in CSV
         try:
             metadata = self._load_stations()
         except Exception as e:
@@ -192,10 +193,12 @@ class SynopProcessor(BaseProcessor):
             # and add to single output object
             # TODO inspect result and handle errors
             for result in bufr_generator:
-                bufr.append(result)
-                synop_converted += 1
                 LOGGER.info(f"result: {result}")
-
+                if len(result.keys()) == 0:
+                    LOGGER.error("Empty result")
+                else:
+                    bufr.append(result)
+                    synop_converted += 1
         except Exception as e:
             LOGGER.error(e)
             errors.append(f"Error converting to BUFR: {e}")
@@ -216,8 +219,9 @@ class SynopProcessor(BaseProcessor):
             for fmt, the_data in item.items():
                 if fmt == "_meta":
                     continue
-                storage_url = f'{STORAGE_SOURCE}/{STORAGE_PUBLIC}/{channel}/{identifier}.{fmt}'  # noqa
-                storage_path = f'{channel}/{identifier}.{fmt}'
+                yyyymmdd = data_date.strftime('%Y-%m-%d')
+                storage_path = f'{yyyymmdd}/wis/{channel}/{identifier}.{fmt}'  # noqa   
+                storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
                 client.put_object(
                     bucket_name=STORAGE_PUBLIC,
                     object_name=storage_path,
@@ -232,7 +236,6 @@ class SynopProcessor(BaseProcessor):
                     except Exception as e:
                         LOGGER.error(e)
                         errors.append(f"error hashing: {e}")
-
                     try:
                         msg = {
                             'id': str(uuid.uuid4()),
@@ -316,6 +319,10 @@ class SynopProcessor(BaseProcessor):
 
         r = requests.get(stations_url, params={'f': 'json'}).json()
         csv_output = []
+        if 'features' not in r:
+            LOGGER.error("No features in response")
+            raise Exception(f"No features in response from {stations_url}")
+
         for station in r['features']:
             wsi = station['properties']['wigos_station_identifier']
             tsi = wsi.split("-")[3]

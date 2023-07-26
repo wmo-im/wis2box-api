@@ -13,10 +13,15 @@ jobs:
         with:
           python-version: 3.8    
       
-      - name: Build and Start Docker Compose services
+      - name: Build wis2box-api locally
         working-directory: docker_compose_test
         run:
-          docker-compose up -d --build
+            docker build -t wis2box-api:latest ./../
+  
+      - name: Start Docker Compose services
+        working-directory: docker_compose_test
+        run:
+          docker-compose up -d 
 
       - name: Wait for service to be ready
         run: sleep 5 
@@ -28,3 +33,7 @@ jobs:
             echo "Request failed with status code $status_code"
             exit 1
           fi
+      - name: failed tests 🚩
+        if: ${{ failure() }}
+        run: |
+          docker-compose logs

@@ -123,7 +123,6 @@ STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 API_URL = os.environ.get('WIS2BOX_API_URL').rstrip('/')
 LOGGER.debug(API_URL)
 
-
 class SynopProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
@@ -174,37 +173,39 @@ class SynopProcessor(BaseProcessor):
         LOGGER.debug("Metadata fetched")
         LOGGER.debug(metadata)
         synop_converted = 0
+        synop_published = 0
         # Now call synop to BUFR
         try:
             fm12 = data['data']
             year = data['year']
             month = data['month']
             if 'channel' not in data:
-                data['channel'] = 'synop/test'
+                data['channel'] = '/rou/rnimh/data/core/weather/surface-based-observations/synop'
                 channel = data['channel']
             else:
                 channel = data['channel']
+            # remove leading and trailing slashes
+            channel = channel.strip('/')
+            # run the transform
             bufr_generator = transform(data=fm12,
                                        metadata=metadata,
                                        year=year,
                                        month=month)
-
             # transform returns a generator, we need to iterate over
             # and add to single output object
             # TODO inspect result and handle errors
             for result in bufr_generator:
-                LOGGER.info(f"result: {result}")
                 if len(result.keys()) == 0:
                     LOGGER.error("Empty result")
+                elif 'error' in result.keys():
+                    LOGGER.error(result['error'])
+                    errors.append(result['error'])
                 else:
                     bufr.append(result)
                     synop_converted += 1
         except Exception as e:
             LOGGER.error(e)
             errors.append(f"Error converting to BUFR: {e}")
-
-        # mqtt connection details
-        auth = {'username': BROKER_USERNAME, 'password': BROKER_PASSWORD}
 
         for item in bufr:
             wsi = item['_meta']['properties']['wigos_station_identifier']
@@ -222,11 +223,15 @@ class SynopProcessor(BaseProcessor):
                 yyyymmdd = data_date.strftime('%Y-%m-%d')
                 storage_path = f'{yyyymmdd}/wis/{channel}/{identifier}.{fmt}'  # noqa   
                 storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
-                client.put_object(
-                    bucket_name=STORAGE_PUBLIC,
-                    object_name=storage_path,
-                    data=io.BytesIO(the_data), length=-1,
-                    part_size=10 * 1024 * 1024)
+                try:
+                    client.put_object(
+                        bucket_name=STORAGE_PUBLIC,
+                        object_name=storage_path,
+                        data=io.BytesIO(the_data), length=-1,
+                        part_size=10 * 1024 * 1024)
+                    urls.append(storage_url)
+                except Exception as e:
+                    return self._handle_error(e)
 
                 # TODO ask Dave, how could this not be bufr4?
                 if fmt == 'bufr4':
@@ -269,21 +274,37 @@ class SynopProcessor(BaseProcessor):
                     except Exception as e:
                         LOGGER.error(e)
                         errors.append(f"error creating message: {e}")
-
                     LOGGER.debug(msg)
 
                     try:
-                        publish.single(topic=f'{BROKER_PUBLIC}/{channel}',
+                        LOGGER.info(f"Publishing to {BROKER_PUBLIC}{channel}")
+                        # parse public broker url
+                        broker_public = urlparse(BROKER_PUBLIC)
+                        public_auth = {
+                            'username': broker_public.username,
+                            'password': broker_public.password
+                        }
+                        broker_port = broker_public.port
+                        if broker_port is None:
+                            if broker_public.scheme == 'mqtts':
+                                broker_port = 8883
+                            else:
+                                broker_port = 1883
+                        # publish notification on public broker
+                        publish.single(topic=f'origin/a/wis2/{channel}',
+                                       payload=json.dumps(msg), qos=1,
+                                       retain=False, hostname=broker_public.hostname,
+                                       port=broker_port, auth=public_auth)
+                        synop_published += 1
+                        # publish notification on internal broker
+                        private_auth = {'username': BROKER_USERNAME, 'password': BROKER_PASSWORD}
+                        publish.single(topic='wis2box/notifications',
                                        payload=json.dumps(msg), qos=1,
                                        retain=False, hostname=BROKER_HOST,
-                                       port=int(BROKER_PORT), auth=auth)
+                                       port=int(BROKER_PORT), auth=private_auth)
                         LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}") # noqa
-                        urls.append(storage_url)
                     except Exception as e:
                         LOGGER.error("Error publishing")
-                        LOGGER.error(json.dumps(auth, indent=2))
-                        LOGGER.error(BROKER_HOST)
-                        LOGGER.error(BROKER_PORT)
                         LOGGER.error(e)
                         errors.append(f"{e}")
 
@@ -299,7 +320,7 @@ class SynopProcessor(BaseProcessor):
         outputs = {
             'result': result,
             "messages transformed": synop_converted,
-            "messages published": len(urls),
+            "messages published": synop_published,
             "files": urls,
             "errors": errors
         }

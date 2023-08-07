@@ -121,4 +121,9 @@ resources:
       processor:
         name: wis2box_api.plugins.process.synop_publish.SynopProcessor
 
+    wis2box-bufr2geojson:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor
+
     

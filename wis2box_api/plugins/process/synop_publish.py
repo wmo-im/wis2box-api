@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'x-wmo:wis2box-synop-process',
+    'id': 'wis2box-synop-process',
     'title': 'Process and publish FM-12 SYNOP',
     'description': 'Converts the posted data to BUFR and publishes to specified topic',  # noqa
     'keywords': [],
@@ -180,7 +180,7 @@ class SynopProcessor(BaseProcessor):
             year = data['year']
             month = data['month']
             if 'channel' not in data:
-                data['channel'] = '/rou/rnimh/data/core/weather/surface-based-observations/synop'
+                data['channel'] = 'synop/test'
                 channel = data['channel']
             else:
                 channel = data['channel']
@@ -248,7 +248,7 @@ class SynopProcessor(BaseProcessor):
                             'version': 'v04',
                             'geometry': item['_meta']['geometry'],
                             'properties': {
-                                'data_id': identifier,
+                                'data_id': f'wis2/{channel}/{identifier}',
                                 'datetime': data_date.isoformat(),
                                 'pubtime': dt.now().isoformat(),
                                 'integrity': {

@@ -18,21 +18,10 @@
 # under the License.
 #
 ###############################################################################
-import csv
-from datetime import datetime as dt
-import hashlib
-import io
-import json
 import logging
-from minio import Minio
-import os
-import paho.mqtt.publish as publish
 from pygeoapi.process.base import BaseProcessor
 import requests
-import uuid
 
-from synop2bufr import transform
-from urllib.parse import urlparse
 from bufr2geojson import transform as as_geojson
 
 LOGGER = logging.getLogger(__name__)
@@ -69,7 +58,7 @@ PROCESS_METADATA = {
     },
     'example': {
         'inputs': {
-            "data_url": "https://zmdwis2box.mgee.gov.zm/data/2023-07-27/wis/zmb/zambia_met_service/data/core/weather/surface-based-observations/synop/WIGOS_0-894-2-ZimbaSS_20230727T125400.bufr4",
+            "data_url": "https://zmdwis2box.mgee.gov.zm/data/2023-07-27/wis/zmb/zambia_met_service/data/core/weather/surface-based-observations/synop/WIGOS_0-894-2-ZimbaSS_20230727T125400.bufr4", # noqa
         }
     }
 }
@@ -105,7 +94,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
         input_bytes = requests.get(data_url).content
         LOGGER.debug('Generating GeoJSON features')
         generator = as_geojson(input_bytes, serialize=False)
-        
+
         # iterate over the generator
         # add the features to a list
         items = []

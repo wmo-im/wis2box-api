@@ -123,6 +123,7 @@ STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 API_URL = os.environ.get('WIS2BOX_API_URL').rstrip('/')
 LOGGER.debug(API_URL)
 
+
 class SynopProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
@@ -146,6 +147,7 @@ class SynopProcessor(BaseProcessor):
 
         mimetype = 'application/json'
         errors = []
+        warnings = []
         bufr = []
         urls = []
         result = 'failure'
@@ -191,18 +193,21 @@ class SynopProcessor(BaseProcessor):
                                        metadata=metadata,
                                        year=year,
                                        month=month)
-            # transform returns a generator, we need to iterate over
-            # and add to single output object
-            # TODO inspect result and handle errors
-            for result in bufr_generator:
-                if len(result.keys()) == 0:
-                    LOGGER.error("Empty result")
-                elif 'error' in result.keys():
-                    LOGGER.error(result['error'])
-                    errors.append(result['error'])
-                else:
-                    bufr.append(result)
+            record_nr = 0
+            # iterate over the bufr_generator
+            # each record contains either a bufr4 message or errors/warnings
+            for record in bufr_generator:
+                if 'bufr4' in record:
+                    bufr.append(record)
                     synop_converted += 1
+                elif 'errors' not in record and 'warnings' not in record:
+                    errors.append(f"Internal error for record-nr: {record_nr}")
+                else:
+                    for error in record['errors']:
+                        errors.append(error)
+                    for warning in record['warnings']:
+                        warnings.append(warning)
+                record_nr += 1
         except Exception as e:
             LOGGER.error(e)
             errors.append(f"Error converting to BUFR: {e}")
@@ -218,7 +223,7 @@ class SynopProcessor(BaseProcessor):
                     continue
 
             for fmt, the_data in item.items():
-                if fmt == "_meta":
+                if fmt != "bufr4":
                     continue
                 yyyymmdd = data_date.strftime('%Y-%m-%d')
                 storage_path = f'{yyyymmdd}/wis/{channel}/{identifier}.{fmt}'  # noqa   
@@ -233,7 +238,6 @@ class SynopProcessor(BaseProcessor):
                 except Exception as e:
                     return self._handle_error(e)
 
-                # TODO ask Dave, how could this not be bufr4?
                 if fmt == 'bufr4':
                     try:
                         hash_method = 'sha256'
@@ -292,37 +296,45 @@ class SynopProcessor(BaseProcessor):
                                 broker_port = 1883
                         # publish notification on public broker
                         publish.single(topic=f'origin/a/wis2/{channel}',
-                                       payload=json.dumps(msg), qos=1,
-                                       retain=False, hostname=broker_public.hostname,
-                                       port=broker_port, auth=public_auth)
+                                       payload=json.dumps(msg),
+                                       qos=1,
+                                       retain=False,
+                                       hostname=broker_public.hostname,
+                                       port=broker_port,
+                                       auth=public_auth)
                         synop_published += 1
                         # publish notification on internal broker
-                        private_auth = {'username': BROKER_USERNAME, 'password': BROKER_PASSWORD}
+                        private_auth = {
+                            'username': BROKER_USERNAME,
+                            'password': BROKER_PASSWORD
+                        }
                         publish.single(topic='wis2box/notifications',
-                                       payload=json.dumps(msg), qos=1,
-                                       retain=False, hostname=BROKER_HOST,
-                                       port=int(BROKER_PORT), auth=private_auth)
+                                       payload=json.dumps(msg),
+                                       qos=1,
+                                       retain=False,
+                                       hostname=BROKER_HOST,
+                                       port=int(BROKER_PORT),
+                                       auth=private_auth)
                         LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}") # noqa
                     except Exception as e:
                         LOGGER.error("Error publishing")
                         LOGGER.error(e)
                         errors.append(f"{e}")
 
-        if synop_converted > 0 and errors == []:
+        if synop_converted > 0 and errors == [] and warnings == []:
             result = 'success'
         elif synop_converted == 0:
-            errors.append("No SYNOP messages converted")
             result = 'failure'
         else:
             result = 'partial success'
-            errors.append("Some errors occurred")
 
         outputs = {
             'result': result,
             "messages transformed": synop_converted,
             "messages published": synop_published,
             "files": urls,
-            "errors": errors
+            "errors": errors,
+            "warnings": warnings
         }
 
         return mimetype, outputs
@@ -381,6 +393,7 @@ class SynopProcessor(BaseProcessor):
         errors.append(f"{e}")
         outputs = {
             'result': 'failure',
-            "errors": errors
+            "errors": errors,
+            "warnings": []
         }
         return mimetype, outputs

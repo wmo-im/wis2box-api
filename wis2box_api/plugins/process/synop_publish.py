@@ -18,21 +18,14 @@
 # under the License.
 #
 ###############################################################################
-import csv
-from datetime import datetime as dt
-import hashlib
-import io
-import json
-import logging
-from minio import Minio
-import os
-import paho.mqtt.publish as publish
-from pygeoapi.process.base import BaseProcessor
-import requests
-import uuid
 
+import logging
+
+from pygeoapi.process.base import BaseProcessor
 from synop2bufr import transform
-from urllib.parse import urlparse
+
+from wis2box_api.wis2box.publish import WIS2Publish
+from wis2box_api.wis2box.station import Stations
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,6 +55,15 @@ PROCESS_METADATA = {
             "metadata": None,
             "keywords": [],
         },
+        "notify": {
+            "title": "Notify",
+            "description": "Enable WIS2 notifications",
+            "schema": {"type": "boolean"},
+            "minOccurs": 1,
+            "maxOccurs": 1,
+            "metadata": None,
+            "default": True
+        },
         "year": {
             "title": "Year",
             "description": "Year (UTC) corresponding to FM 12-SYNOP bulletin",
@@ -82,12 +84,9 @@ PROCESS_METADATA = {
         }
     },
     'outputs': {
-        'path': {
-            'title': {'en': 'FeatureCollection'},
-            'description': {
-                'en': 'A GeoJSON FeatureCollection of the '
-                'stations with their status'
-            },
+        'result': {
+            'title': 'WIS2Publish result',
+            'description': 'WIS2Publish result',
             'schema': {
                 'type': 'object',
                 'contentMediaType': 'application/json'
@@ -100,31 +99,20 @@ PROCESS_METADATA = {
             "year": 2023,
             "month": 1,
             "data": "AAXX 19064 68399 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=" # noqa
+        },
+        'outputs': {
+            'result': "partial success",
+            "messages transformed": 1,
+            "messages published": 2,
+            "files": ["http://localhost:5000/wis2box/synop/test/2023/01/20230101T000000Z_20230101T000000Z.bufr"], # noqa
+            "errors": [],
+            "warnings": []
         }
     }
 }
 
-# Get broker connection details
-BROKER_USERNAME = os.environ.get('WIS2BOX_BROKER_USERNAME')
-BROKER_PASSWORD = os.environ.get('WIS2BOX_BROKER_PASSWORD')
-BROKER_HOST = os.environ.get('WIS2BOX_BROKER_HOST')
-BROKER_PORT = os.environ.get('WIS2BOX_BROKER_PORT')
-BROKER_PUBLIC = os.environ.get('WIS2BOX_BROKER_PUBLIC').rstrip('/')
 
-DOCKER_API_URL = os.environ.get('WIS2BOX_DOCKER_API_URL')
-STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
-STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
-STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
-STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
-
-STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
-
-# API details
-API_URL = os.environ.get('WIS2BOX_API_URL').rstrip('/')
-LOGGER.debug(API_URL)
-
-
-class SynopProcessor(BaseProcessor):
+class SynopPublishProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
         """
@@ -135,6 +123,8 @@ class SynopProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
+        # initialize the WIS2Publish object
+        self._wis2_publish = WIS2Publish()
 
     def execute(self, data):
         """
@@ -145,47 +135,24 @@ class SynopProcessor(BaseProcessor):
         :returns: 'application/json'
         """
 
-        mimetype = 'application/json'
-        errors = []
-        warnings = []
-        bufr = []
-        urls = []
-        result = 'failure'
+        LOGGER.info('Executing process {}'.format(self.name))
 
-        # First setup MinIO client
-        try:
-            is_secure = False
-            urlparsed = urlparse(STORAGE_SOURCE)
-            if STORAGE_SOURCE.startswith('https://'):
-                is_secure = True
-            client = Minio(endpoint=urlparsed.netloc,
-                           access_key=STORAGE_USERNAME,
-                           secret_key=STORAGE_PASSWORD,
-                           secure=is_secure)
-        except Exception as e:
-            msg = f"Error connecting to MinIO: {e}"
-            return self._handle_error(msg)
-
-        try:
-            metadata = self._load_stations()
-        except Exception as e:
-            msg = f"Error loading stations: {e}"
-            return self._handle_error(msg)
-
-        LOGGER.debug("Metadata fetched")
-        LOGGER.debug(metadata)
-        synop_converted = 0
-        synop_published = 0
+        # initialize the Stations object at execute
+        # stations might have been updated since the process was initialized
+        stations = Stations()
+        # get the station metadata as a CSV string
+        metadata = stations.get_csv_string()
+        
         # Now call synop to BUFR
         try:
             fm12 = data['data']
             year = data['year']
             month = data['month']
-            if 'channel' not in data:
-                data['channel'] = 'synop/test'
-                channel = data['channel']
+            channel = data['channel']
+            if 'notify' not in data:
+                notify = True
             else:
-                channel = data['channel']
+                notify = data['notify']
             # remove leading and trailing slashes
             channel = channel.strip('/')
             # run the transform
@@ -193,207 +160,16 @@ class SynopProcessor(BaseProcessor):
                                        metadata=metadata,
                                        year=year,
                                        month=month)
-            record_nr = 0
-            # iterate over the bufr_generator
-            # each record contains either a bufr4 message or errors/warnings
-            for record in bufr_generator:
-                if 'bufr4' in record:
-                    bufr.append(record)
-                    synop_converted += 1
-                elif 'errors' not in record and 'warnings' not in record:
-                    errors.append(f"Internal error for record-nr: {record_nr}")
-                else:
-                    for error in record['errors']:
-                        errors.append(error)
-                    for warning in record['warnings']:
-                        warnings.append(warning)
-                record_nr += 1
-        except Exception as e:
-            LOGGER.error(e)
-            errors.append(f"Error converting to BUFR: {e}")
+        except Exception as err:
+            return self._wis2_publish.handle_error(f'synop2bufr raised Exception: {err}') # noqa
 
-        for item in bufr:
-            wsi = item['_meta']['properties']['wigos_station_identifier']
-            identifier = item['_meta']['id']
-            data_date = item['_meta']['properties']['datetime']
-            if 'result' in item['_meta']:
-                if item['_meta']['result']['code'] != 1:
-                    msg = item['_meta']['result']['message']
-                    LOGGER.error(f'Transform returned {msg} for wsi={wsi}')
-                    continue
+        output_items = []
+        for item in bufr_generator:
+            output_items.append(item)
 
-            for fmt, the_data in item.items():
-                if fmt != "bufr4":
-                    continue
-                yyyymmdd = data_date.strftime('%Y-%m-%d')
-                storage_path = f'{yyyymmdd}/wis/{channel}/{identifier}.{fmt}'  # noqa   
-                storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
-                try:
-                    client.put_object(
-                        bucket_name=STORAGE_PUBLIC,
-                        object_name=storage_path,
-                        data=io.BytesIO(the_data), length=-1,
-                        part_size=10 * 1024 * 1024)
-                    urls.append(storage_url)
-                except Exception as e:
-                    return self._handle_error(e)
+        LOGGER.info(f'synop2bufr-transform returned {len(output_items)} items') # noqa
 
-                if fmt == 'bufr4':
-                    try:
-                        hash_method = 'sha256'
-                        hash_value = hashlib.sha256(the_data).hexdigest()
-                    except Exception as e:
-                        LOGGER.error(e)
-                        errors.append(f"error hashing: {e}")
-                    try:
-                        msg = {
-                            'id': str(uuid.uuid4()),
-                            'type': 'Feature',
-                            'version': 'v04',
-                            'geometry': item['_meta']['geometry'],
-                            'properties': {
-                                'data_id': f'wis2/{channel}/{identifier}',
-                                'datetime': data_date.isoformat(),
-                                'pubtime': dt.now().isoformat(),
-                                'integrity': {
-                                    'method': hash_method,
-                                    'value': hash_value,
-                                },
-                                'wigos_station_identifier': wsi
-                            },
-                            'links': [
-                                {
-                                    'rel': 'canonical',
-                                    'type': 'application/x-bufr',
-                                    'href': storage_url,
-                                    'length': len(the_data)
-                                },
-                                {
-                                    'rel': 'via',
-                                    'type': 'text/html',
-                                    'href': f'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/{wsi}' # noqa
-                                }
-                            ]
-                        }
-                    except Exception as e:
-                        LOGGER.error(e)
-                        errors.append(f"error creating message: {e}")
-                    LOGGER.debug(msg)
-
-                    try:
-                        LOGGER.info(f"Publishing to {BROKER_PUBLIC}{channel}")
-                        # parse public broker url
-                        broker_public = urlparse(BROKER_PUBLIC)
-                        public_auth = {
-                            'username': broker_public.username,
-                            'password': broker_public.password
-                        }
-                        broker_port = broker_public.port
-                        if broker_port is None:
-                            if broker_public.scheme == 'mqtts':
-                                broker_port = 8883
-                            else:
-                                broker_port = 1883
-                        # publish notification on public broker
-                        publish.single(topic=f'origin/a/wis2/{channel}',
-                                       payload=json.dumps(msg),
-                                       qos=1,
-                                       retain=False,
-                                       hostname=broker_public.hostname,
-                                       port=broker_port,
-                                       auth=public_auth)
-                        synop_published += 1
-                        # publish notification on internal broker
-                        private_auth = {
-                            'username': BROKER_USERNAME,
-                            'password': BROKER_PASSWORD
-                        }
-                        publish.single(topic='wis2box/notifications',
-                                       payload=json.dumps(msg),
-                                       qos=1,
-                                       retain=False,
-                                       hostname=BROKER_HOST,
-                                       port=int(BROKER_PORT),
-                                       auth=private_auth)
-                        LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}") # noqa
-                    except Exception as e:
-                        LOGGER.error("Error publishing")
-                        LOGGER.error(e)
-                        errors.append(f"{e}")
-
-        if synop_converted > 0 and errors == [] and warnings == []:
-            result = 'success'
-        elif synop_converted == 0:
-            result = 'failure'
-        else:
-            result = 'partial success'
-
-        outputs = {
-            'result': result,
-            "messages transformed": synop_converted,
-            "messages published": synop_published,
-            "files": urls,
-            "errors": errors,
-            "warnings": warnings
-        }
-
-        return mimetype, outputs
-
-    def _load_topics(self):
-        # attempt to load topics
-        topics_url = f"{API_URL}/collections/topics/items"  # noqa
-        return
-
-    def _load_stations(self):
-
-        stations_url = f"{API_URL}/collections/stations/items"  # noqa
-
-        LOGGER.debug(stations_url)
-
-        r = requests.get(stations_url, params={'f': 'json'}).json()
-        csv_output = []
-        if 'features' not in r:
-            LOGGER.error("No features in response")
-            raise Exception(f"No features in response from {stations_url}")
-
-        for station in r['features']:
-            wsi = station['properties']['wigos_station_identifier']
-            tsi = wsi.split("-")[3]
-            obj = {
-                'station_name': station['properties']['name'],
-                'wigos_station_identifier': wsi,
-                'traditional_station_identifier': tsi,
-                'facility_type': station['properties']['facility_type'],
-                'latitude': station['geometry']['coordinates'][1],
-                'longitude': station['geometry']['coordinates'][0],
-                'elevation': station['geometry']['coordinates'][2],
-                'territory_name': station['properties']['territory_name'],
-                'wmo_region': station['properties']['wmo_region'],
-                'barometer_height': None
-            }
-            csv_output.append(obj)
-
-        string_buffer = io.StringIO()
-        csv_writer = csv.DictWriter(string_buffer, fieldnames=csv_output[0].keys())  # noqa
-        csv_writer.writeheader()
-        csv_writer.writerows(csv_output)
-        csv_string = string_buffer.getvalue()
-        csv_string = csv_string.replace("\r\n", "\n")  # noqa make sure *nix line endings
-        string_buffer.close()
-
-        return csv_string
+        return self._wis2_publish.process_bufr(output_items, channel, notify)
 
     def __repr__(self):
         return '<submit> {}'.format(self.name)
-
-    def _handle_error(self, e):
-        LOGGER.error(e)
-        mimetype = 'application/json'
-        errors = []
-        errors.append(f"{e}")
-        outputs = {
-            'result': 'failure',
-            "errors": errors,
-            "warnings": []
-        }
-        return mimetype, outputs

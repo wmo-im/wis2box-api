@@ -116,14 +116,18 @@ resources:
         processor:
             name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor
 
-    wis2box-synop-process:
-      type: process
-      processor:
-        name: wis2box_api.plugins.process.synop_publish.SynopProcessor
-
     wis2box-bufr2geojson:
       type: process
       processor:
         name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor
 
+    wis2box-synop-process:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.synop_publish.SynopPublishProcessor
+
+    wis2box-csv-process:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.csv_publish.CSVPublishProcessor
     

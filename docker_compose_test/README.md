@@ -4,20 +4,13 @@ This directory contains the files to test the wis2box-api within a docker-compos
 
 test.env contains the environment variables for the test.
 
-## Build
-
-Build the wis2box-api image locally:
-
-```bash
-docker build -t wis2box-api:latest ./../
-```
 
 ## Run
 
 Run the docker-compose stack in the background:
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 ## Debug

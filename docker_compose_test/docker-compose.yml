@@ -3,7 +3,9 @@ services:
     container_name: wis2box-api-test
     env_file:
       - test.env
-    image: wis2box-api:latest
+    build:
+      context: ./../
+      dockerfile: Dockerfile
     depends_on:
       elasticsearch:
         condition: service_healthy

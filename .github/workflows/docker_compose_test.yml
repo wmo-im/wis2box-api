@@ -12,21 +12,17 @@ jobs:
         name: setup Python
         with:
           python-version: 3.8    
-      
-      - name: Build wis2box-api locally
+        
+      - name: Docker Compose up -d --build
         working-directory: docker_compose_test
         run:
-            docker build -t wis2box-api:latest ./../
-  
-      - name: Start Docker Compose services
-        working-directory: docker_compose_test
-        run:
-          docker-compose up -d 
+          docker-compose up -d  --build
 
       - name: Wait for service to be ready
         run: sleep 5 
 
       - name: Check status code
+        working-directory: docker_compose_test  
         run: |
           status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4343/oapi)
           if [[ $status_code -ne 200 ]]; then
@@ -34,6 +30,7 @@ jobs:
             exit 1
           fi
       - name: failed tests 🚩
+        working-directory: docker_compose_test
         if: ${{ failure() }}
         run: |
           docker-compose logs

@@ -25,7 +25,7 @@ expected_response = {
     "files": [
         "http://localhost/data/2023-01-19/wis/synop/test/WIGOS_0-20000-0-64400_20230119T060000.bufr4" # noqa
     ],
-    "errors": ["error"],
+    "errors": [],
     "warnings": []
 }
 

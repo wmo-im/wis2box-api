@@ -39,6 +39,7 @@ jobs:
       - name: Run wis2box metadata station publish-collection
         working-directory: docker_compose_test
         run: |
+          sleep 10
           docker exec -i wis2box-api-test-wis2box-management wis2box metadata station publish-collection
 
       - name: test synop publish

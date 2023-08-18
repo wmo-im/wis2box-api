@@ -24,6 +24,8 @@ import logging
 from pygeoapi.process.base import BaseProcessor
 
 from wis2box_api.wis2box.publish import WIS2Publish
+from wis2box_api.wis2box.publish import handle_error
+
 from wis2box_api.wis2box.station import Stations
 
 from csv2bufr import transform as transform_csv
@@ -152,8 +154,6 @@ class CSVPublishProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
-        # initialize the WIS2Publish object
-        self._wis2_publish = WIS2Publish()
 
     def execute(self, data):
         """
@@ -166,22 +166,23 @@ class CSVPublishProcessor(BaseProcessor):
 
         LOGGER.info('Executing process {}'.format(self.name))
 
+        try:
+            channel = data['channel']
+            notify = data['notify']
+            # initialize the WIS2Publish object
+            wis2_publish = WIS2Publish(channel,notify)
+        except Exception as err:
+            return handle_error({err})
+    
         # Now call csv to BUFR
         try:
             csv_data = data['data']
             mapping = data['mapping']
-            channel = data['channel']
-            if 'notify' not in data:
-                notify = True
-            else:
-                notify = data['notify']
-            # remove leading and trailing slashes
-            channel = channel.strip('/')
             # run the transform
             bufr_generator = transform_csv(data=csv_data,
                                            mapping=mapping)
         except Exception as err:
-            return self._wis2_publish.handle_error(f'csv2bufr raised Exception: {err}') # noqa
+            return wis2_publish.handle_error(f'csv2bufr raised Exception: {err}') # noqa
 
         # init stations at execution to get latest stations
         stations = Stations()
@@ -210,4 +211,4 @@ class CSVPublishProcessor(BaseProcessor):
 
             output_items.append(item)
 
-        return self._wis2_publish.process_bufr(output_items, channel, notify)
+        return wis2_publish.process_items(output_items)

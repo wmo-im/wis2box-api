@@ -28,13 +28,10 @@ import os
 
 LOGGER = logging.getLogger(__name__)
 
-API_URL = os.environ.get('WIS2BOX_API_URL')
-
 
 class Stations():
 
     def __init__(self):
-        self.api_url = API_URL
         self.features = [] 
         self._load_stations()
 
@@ -98,7 +95,7 @@ class Stations():
 
         LOGGER.info("Loading stations from WIS2 API")
 
-        stations_url = f"{self.api_url}/collections/stations/items"  # noqa
+        stations_url = "http://localhost/oapi/collections/stations/items"  # noqa
         LOGGER.info(stations_url)
 
         r = requests.get(stations_url, params={'f': 'json'}).json()

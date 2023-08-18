@@ -25,6 +25,8 @@ from pygeoapi.process.base import BaseProcessor
 from synop2bufr import transform
 
 from wis2box_api.wis2box.publish import WIS2Publish
+from wis2box_api.wis2box.publish import handle_error
+
 from wis2box_api.wis2box.station import Stations
 
 LOGGER = logging.getLogger(__name__)
@@ -98,15 +100,8 @@ PROCESS_METADATA = {
             "channel": "synop/test",
             "year": 2023,
             "month": 1,
-            "data": "AAXX 19064 68399 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=" # noqa
-        },
-        'outputs': {
-            'result': "partial success",
-            "messages transformed": 1,
-            "messages published": 2,
-            "files": ["http://localhost:5000/wis2box/synop/test/2023/01/20230101T000000Z_20230101T000000Z.bufr"], # noqa
-            "errors": [],
-            "warnings": []
+            "notify": True,
+            "data": "AAXX 19064 64400 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=" # noqa
         }
     }
 }
@@ -121,10 +116,7 @@ class SynopPublishProcessor(BaseProcessor):
         :param processor_def: provider definition
         :returns: pygeoapi.process.synop-form.submit
         """
-
         super().__init__(processor_def, PROCESS_METADATA)
-        # initialize the WIS2Publish object
-        self._wis2_publish = WIS2Publish()
 
     def execute(self, data):
         """
@@ -137,6 +129,14 @@ class SynopPublishProcessor(BaseProcessor):
 
         LOGGER.info('Executing process {}'.format(self.name))
 
+        try:
+            channel = data['channel']
+            notify = data['notify']
+            # initialize the WIS2Publish object
+            wis2_publish = WIS2Publish(channel,notify)
+        except Exception as err:
+            return handle_error({err})
+        
         # initialize the Stations object at execute
         # stations might have been updated since the process was initialized
         stations = Stations()
@@ -148,28 +148,21 @@ class SynopPublishProcessor(BaseProcessor):
             fm12 = data['data']
             year = data['year']
             month = data['month']
-            channel = data['channel']
-            if 'notify' not in data:
-                notify = True
-            else:
-                notify = data['notify']
-            # remove leading and trailing slashes
-            channel = channel.strip('/')
             # run the transform
             bufr_generator = transform(data=fm12,
                                        metadata=metadata,
                                        year=year,
                                        month=month)
         except Exception as err:
-            return self._wis2_publish.handle_error(f'synop2bufr raised Exception: {err}') # noqa
+            return wis2_publish.handle_error(f'synop2bufr raised Exception: {err}') # noqa
 
         output_items = []
         for item in bufr_generator:
             output_items.append(item)
 
-        LOGGER.info(f'synop2bufr-transform returned {len(output_items)} items') # noqa
+        LOGGER.debug(f'synop2bufr-transform returned {len(output_items)} items') # noqa
 
-        return self._wis2_publish.process_bufr(output_items, channel, notify)
+        return wis2_publish.process_items(output_items)
 
     def __repr__(self):
         return '<submit> {}'.format(self.name)

@@ -19,11 +19,17 @@
 #
 ###############################################################################
 
+import base64
+
 from datetime import datetime as dt
-import hashlib
+from enum import Enum
+
 import io
 import json
 import logging
+
+import hashlib
+
 from minio import Minio
 import os
 import paho.mqtt.publish as publish
@@ -31,6 +37,8 @@ import paho.mqtt.publish as publish
 import uuid
 
 from urllib.parse import urlparse
+
+from wis2box_api.wis2box.minio import MinIOStorage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,60 +49,85 @@ BROKER_HOST = os.environ.get('WIS2BOX_BROKER_HOST')
 BROKER_PORT = os.environ.get('WIS2BOX_BROKER_PORT')
 BROKER_PUBLIC = os.environ.get('WIS2BOX_BROKER_PUBLIC').rstrip('/')
 
-STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
-STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
-STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
 STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
-
 STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 
+DATA_OBJECT_MIMETYPES = {
+    'bufr4': 'application/x-bufr',
+    'grib2': 'application/x-grib2',
+    'geojson': 'application/json'
+}
+
+def handle_error(error):
+    """Handle errors
+
+    :param e: exception
+
+    :returns: mimetype, outputs
+    """
+
+    mimetype = 'application/json'
+    errors = []
+    errors.append(f"{error}")
+    outputs = {
+        "result": 'failure',
+        "errors": errors,
+        "warnings": []
+    }
+    return mimetype, outputs
+
+class SecureHashAlgorithms(Enum):
+    SHA512 = 'sha512'
+    MD5 = 'md5'
 
 class WIS2Publish():
 
-    def __init__(self):
-        self.notify = True
-        self.minio_client = self._minio_client()
+    def __init__(self,channel,notify):
+        # remove leading and trailing slashes
+        channel = channel.strip('/')
+        
+        self._notify = notify
+        self._channel = channel
+        self._storage = MinIOStorage(bucket_name=STORAGE_PUBLIC,
+                                     channel=channel)
 
-    def _minio_client(self):
-        is_secure = False
-        urlparsed = urlparse(STORAGE_SOURCE)
-        if STORAGE_SOURCE.startswith('https://'):
-            is_secure = True
-        client = Minio(endpoint=urlparsed.netloc,
-                       access_key=STORAGE_USERNAME,
-                       secret_key=STORAGE_PASSWORD,
-                       secure=is_secure)
-        return client
+    def _generate_checksum(self, bytes, algorithm: SecureHashAlgorithms) -> str:  # noqa
+        """
+        Generate a checksum of message file
+        :param algorithm: secure hash algorithm (md5, sha512)
+        :returns: `tuple` of hexdigest and length
+        """
 
-    def process_bufr(self, output_items: [], channel: str, notify: bool):
-        """Process bufr messages, store and publish them
+        sh = getattr(hashlib, algorithm)()
+        sh.update(bytes)
+        return base64.b64encode(sh.digest()).decode()
 
-        :param output_items: list of bufr messages
-        :param channel: string with channel name
-        :param notify: boolean to publish to broker or not
+    def process_items(self, output_items: []):
+        """Process output_items, store and publish them
+
+        :param output_items: list of output-items from the transform
 
         :returns: 'application/json'
         """
 
-        LOGGER.info(f'Processing {len(output_items)} bufr messages')
+        LOGGER.info(f'Processing {len(output_items)} output-items')
 
-        client = self._minio_client()
+        data_items = []
 
         mimetype = 'application/json'
         errors = []
         warnings = []
-        bufr = []
         urls = []
         result = 'failure'
 
         record_nr = 0
         data_converted = 0
         data_published = 0
-        # iterate over the bufr_generator
-        # each record contains either a bufr4 message or errors/warnings
+        # iterate over the output_items
+        # each record contains either a key from DATA_OBJECT_MIMETYPES or errors and warnings # noqa
         for record in output_items:
-            if 'bufr4' in record:
-                bufr.append(record)
+            if any(key in record for key in DATA_OBJECT_MIMETYPES):
+                data_items.append(record)
                 data_converted += 1
             elif 'errors' not in record and 'warnings' not in record:
                 errors.append(f"Internal error for record-nr: {record_nr}")
@@ -105,8 +138,10 @@ class WIS2Publish():
                     warnings.append(warning)
             record_nr += 1
 
-        for item in bufr:
-            wsi = item['_meta']['properties']['wigos_station_identifier']
+        for item in data_items:
+            wsi = None
+            if 'wigos_station_identifier' in item['_meta']['properties']:
+                wsi = item['_meta']['properties']['wigos_station_identifier']
             identifier = item['_meta']['id']
             data_date = item['_meta']['properties']['datetime']
             if 'result' in item['_meta']:
@@ -116,42 +151,41 @@ class WIS2Publish():
                     continue
 
             for fmt, the_data in item.items():
-                if fmt != "bufr4":
+                if fmt not in DATA_OBJECT_MIMETYPES:
+                    LOGGER.error(f'Unknown format {fmt}')
                     continue
                 yyyymmdd = data_date.strftime('%Y-%m-%d')
-                storage_path = f'{yyyymmdd}/wis/{channel}/{identifier}.{fmt}'  # noqa   
+                storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
                 storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
                 try:
-                    client.put_object(
-                        bucket_name=STORAGE_PUBLIC,
-                        object_name=storage_path,
-                        data=io.BytesIO(the_data), length=-1,
-                        part_size=10 * 1024 * 1024)
+                    self._storage.put(data=the_data,identifier=identifier)
                     urls.append(storage_url)
                 except Exception as e:
-                    return self._handle_error(e)
+                    LOGGER.error(e)
+                    return handle_error(e)
 
-                if notify:
+                notify_result = 'unknown'
+                if self._notify:
                     try:
-                        hash256_value = hashlib.sha256(the_data).hexdigest()
+                        checksum_type = SecureHashAlgorithms.SHA512.value
+                        checksum_value = self._generate_checksum(the_data, checksum_type) # noqa
+                        notify_result = self._publish_wis2_message(
+                            storage_url=storage_url,
+                            checksum_type=checksum_type,
+                            checksum_value=checksum_value,
+                            data_length=len(the_data),
+                            content_type=DATA_OBJECT_MIMETYPES[fmt],
+                            identifier=identifier,
+                            data_date_iso=data_date.isoformat(),
+                            geometry=item['_meta']['geometry'],
+                            wsi=wsi)
                     except Exception as e:
                         LOGGER.error(e)
-                        errors.append(f"error hashing: {e}")
-                    status = self._publish_wis2_message(
-                        channel=channel,
-                        storage_url=storage_url,
-                        hash256_value=hash256_value,
-                        data_length=len(the_data),
-                        content_type='application/x-bufr',
-                        identifier=identifier,
-                        data_date_iso=data_date.isoformat(),
-                        geometry=item['_meta']['geometry'],
-                        wsi=wsi
-                    )
-                    if status == 'success':
+                        errors.append(f"error hashing: {e}") 
+                    if notify_result == 'success':
                         data_published += 1
                     else:
-                        errors.append(status)
+                        errors.append(f"error publishing WIS2-notification: {notify_result}") # noqa
 
         if data_converted > 0 and errors == [] and warnings == []:
             result = 'success'
@@ -172,9 +206,9 @@ class WIS2Publish():
         return mimetype, outputs
 
     def _publish_wis2_message(self,
-                              channel: str,
                               storage_url: str,
-                              hash256_value: str,
+                              checksum_type: str,
+                              checksum_value: str,
                               data_length: int,
                               content_type: str,
                               identifier: str,
@@ -183,9 +217,9 @@ class WIS2Publish():
                               wsi: str = None) -> str:
         """Publish a WIS2 message
 
-        :param channel: channel name
         :param storage_url: url to the stored file
-        :param hash256_value: sha256 hash of the file
+        :param checksum_type: type of the checksum
+        :param checksum_value: value of the checksum
         :param data_length: length of the file
         :param content_type: content type of the file
         :param identifier: identifier of the file
@@ -203,12 +237,12 @@ class WIS2Publish():
                 'version': 'v04',
                 'geometry': geometry,
                 'properties': {
-                    'data_id': f'wis2/{channel}/{identifier}',
+                    'data_id': f'wis2/{self._channel}/{identifier}',
                     'datetime': data_date_iso,
                     'pubtime': dt.now().isoformat(),
                     'integrity': {
-                        'method': 'sha256',
-                        'value': hash256_value,
+                        'method': checksum_type,
+                        'value': checksum_value
                     },
                     'wigos_station_identifier': wsi
                 },
@@ -232,7 +266,8 @@ class WIS2Publish():
         LOGGER.debug(msg)
 
         try:
-            LOGGER.info(f"Publishing to {BROKER_PUBLIC}{channel}")
+            topic = f'origin/a/wis2/{self._channel}'
+            LOGGER.info(f"Publishing to {topic} on {BROKER_PUBLIC}")
             # parse public broker url
             broker_public = urlparse(BROKER_PUBLIC)
             public_auth = {
@@ -246,7 +281,7 @@ class WIS2Publish():
                 else:
                     broker_port = 1883
             # publish notification on public broker
-            publish.single(topic=f'origin/a/wis2/{channel}',
+            publish.single(topic=f'origin/a/wis2/{topic}',
                            payload=json.dumps(msg),
                            qos=1,
                            retain=False,
@@ -266,27 +301,8 @@ class WIS2Publish():
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug(f"Message successfully published to {BROKER_PUBLIC}{channel}") # noqa
+            LOGGER.debug("Message successfully published")
         except Exception as e:
             return f"Error publishing message: {e}"
 
         return f"success"
-
-    def handle_error(self, e):
-        """Handle errors
-
-        :param e: exception
-
-        :returns: mimetype, outputs
-        """
-
-        LOGGER.error(e)
-        mimetype = 'application/json'
-        errors = []
-        errors.append(f"{e}")
-        outputs = {
-            "result": 'failure',
-            "errors": errors,
-            "warnings": []
-        }
-        return mimetype, outputs

@@ -36,6 +36,7 @@ STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
 STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
 STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
 
+
 class MinIOStorage():
     """MinIO storage manager"""
     def __init__(self, bucket_name, channel) -> None:
@@ -56,7 +57,7 @@ class MinIOStorage():
 
     def get(self, identifier: str) -> Any:
 
-        LOGGER.debug(f'Getting object {self.channel}/{identifier} from bucket={self.bucket_name}')
+        LOGGER.debug(f'Getting object {self.channel}/{identifier} from bucket={self.bucket_name}') # noqa
         # Get data of an object.
         try:
             response = self.client.get_object(
@@ -73,8 +74,9 @@ class MinIOStorage():
     def put(self, data: bytes, identifier: str) -> bool:
 
         object_key = f'{self.channel}/{identifier}'
-        LOGGER.info(f'Putting data as object={object_key} in bucket={self.bucket_name}')
-        self.client.put_object(bucket_name=self.bucket_name, object_name=object_key,
+        LOGGER.info(f'Putting data as object={object_key} in bucket={self.bucket_name}') # noqa
+        self.client.put_object(bucket_name=self.bucket_name,
+                               object_name=object_key,
                                data=BytesIO(data), length=-1,
                                part_size=10*1024*1024)
 
@@ -83,9 +85,8 @@ class MinIOStorage():
     def delete(self, identifier: str) -> bool:
 
         LOGGER.debug(f'Deleting object {self.channel}/{identifier}')
-        self.client.remove_object(self.bucket_name, {self.channel}/{identifier})
+        self.client.remove_object(self.bucket_name, {self.channel}/{identifier}) # noqa
         return True
-
 
     def __repr__(self):
         return f'<MinioStorage ({self.source})>'

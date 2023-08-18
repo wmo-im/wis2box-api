@@ -24,7 +24,6 @@ import io
 import logging
 
 import requests
-import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 class Stations():
 
     def __init__(self):
-        self.features = [] 
+        self.features = []
         self._load_stations()
 
     def get_valid_wsi(self, wsi: str):

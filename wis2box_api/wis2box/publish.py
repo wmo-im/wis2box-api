@@ -24,13 +24,11 @@ import base64
 from datetime import datetime as dt
 from enum import Enum
 
-import io
 import json
 import logging
 
 import hashlib
 
-from minio import Minio
 import os
 import paho.mqtt.publish as publish
 
@@ -58,6 +56,7 @@ DATA_OBJECT_MIMETYPES = {
     'geojson': 'application/json'
 }
 
+
 def handle_error(error):
     """Handle errors
 
@@ -76,16 +75,18 @@ def handle_error(error):
     }
     return mimetype, outputs
 
+
 class SecureHashAlgorithms(Enum):
     SHA512 = 'sha512'
     MD5 = 'md5'
 
+
 class WIS2Publish():
 
-    def __init__(self,channel,notify):
+    def __init__(self, channel, notify):
         # remove leading and trailing slashes
         channel = channel.strip('/')
-        
+
         self._notify = notify
         self._channel = channel
         self._storage = MinIOStorage(bucket_name=STORAGE_PUBLIC,
@@ -158,7 +159,7 @@ class WIS2Publish():
                 storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
                 storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
                 try:
-                    self._storage.put(data=the_data,identifier=identifier)
+                    self._storage.put(data=the_data, identifier=identifier)
                     urls.append(storage_url)
                 except Exception as e:
                     LOGGER.error(e)
@@ -181,7 +182,7 @@ class WIS2Publish():
                             wsi=wsi)
                     except Exception as e:
                         LOGGER.error(e)
-                        errors.append(f"error hashing: {e}") 
+                        errors.append(f"error hashing: {e}")
                     if notify_result == 'success':
                         data_published += 1
                     else:

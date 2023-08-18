@@ -170,10 +170,10 @@ class CSVPublishProcessor(BaseProcessor):
             channel = data['channel']
             notify = data['notify']
             # initialize the WIS2Publish object
-            wis2_publish = WIS2Publish(channel,notify)
+            wis2_publish = WIS2Publish(channel, notify)
         except Exception as err:
             return handle_error({err})
-    
+
         # Now call csv to BUFR
         try:
             csv_data = data['data']

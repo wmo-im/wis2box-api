@@ -133,16 +133,16 @@ class SynopPublishProcessor(BaseProcessor):
             channel = data['channel']
             notify = data['notify']
             # initialize the WIS2Publish object
-            wis2_publish = WIS2Publish(channel,notify)
+            wis2_publish = WIS2Publish(channel, notify)
         except Exception as err:
             return handle_error({err})
-        
+
         # initialize the Stations object at execute
         # stations might have been updated since the process was initialized
         stations = Stations()
         # get the station metadata as a CSV string
         metadata = stations.get_csv_string()
-        
+
         # Now call synop to BUFR
         try:
             fm12 = data['data']

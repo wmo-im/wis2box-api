@@ -36,10 +36,10 @@ jobs:
             exit 1
           fi
 
-      - name: Check wis2box station command
+      - name: Run wis2box metadata station publish-collection
         working-directory: docker_compose_test
         run: |
-          docker exec -it wis2box-api-test-wis2box-management wis2box metadata station publish-collection
+          docker exec -i wis2box-api-test-wis2box-management wis2box metadata station publish-collection
 
       - name: test synop publish
         working-directory: docker_compose_test

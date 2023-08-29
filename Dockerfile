@@ -31,7 +31,7 @@ COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
 COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
-    && python3 setup.py install \
+    && pip3 install -e . \
     && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 

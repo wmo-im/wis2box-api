@@ -73,20 +73,22 @@ class Admin(API):
         # validate_openapi_document(oas)
         return True
 
-    def write(self, config):
+    def write(self, config, action: str):
         """
         Write pygeoapi configuration and OpenAPI to file
 
         :param config: configuration dict
+        :param action: HTTP operation
         """
-        self.write_config(config)
+        self.write_config(config, action)
         self.write_oas(config)
 
-    def write_config(self, config):
+    def write_config(self, config, action: str):
         """
         Write pygeoapi configuration file
 
         :param config: configuration dict
+        :param action: HTTP operation
         """
 
         # validate pygeoapi configuration
@@ -95,7 +97,8 @@ class Admin(API):
         with open(self.PYGEOAPI_CONFIG, encoding='utf8') as fh:
             conf = yaml.safe_load(fh)
 
-        config = json_merge_patch.merge(config, conf)
+        if action != 'DELETE':
+            config = json_merge_patch.merge(config, conf)
 
         # write pygeoapi configuration
         LOGGER.debug('Writing pygeoapi configutation')
@@ -257,7 +260,7 @@ class Admin(API):
                 400, headers, request.format, 'ValidationError', msg
             )
 
-        self.write(config)
+        self.write(config, action='POST')
 
         content = f'Location: /{request.path_info}/{resource_id}'
         LOGGER.debug(f'Success at {content}')
@@ -337,7 +340,7 @@ class Admin(API):
                 400, headers, request.format, 'ValidationError', msg
             )
 
-        self.write(config)
+        self.write(config, action='DELETE')
 
         return headers, 204, {}
 
@@ -406,7 +409,7 @@ class Admin(API):
                 400, headers, request.format, 'ValidationError', msg
             )
 
-        self.write(config)
+        self.write(config, action='PUT')
 
         return headers, 204, {}
 
@@ -475,7 +478,7 @@ class Admin(API):
                 400, headers, request.format, 'ValidationError', msg
             )
 
-        self.write(config)
+        self.write(config, action='PATCH')
 
         content = to_json(resource, self.pretty_print)
 

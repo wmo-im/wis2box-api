@@ -9,6 +9,8 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      wis2box-management:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/oapi/admin/resources"]
       interval: 5s
@@ -33,8 +35,7 @@ services:
       mosquitto:
         condition: service_started
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "4001:9001"
 
   wis2box-management:
     container_name: wis2box-api-test-wis2box-management
@@ -51,8 +52,6 @@ services:
         condition: service_healthy
       mosquitto:
         condition: service_started
-      wis2box-api:
-        condition: service_healthy
     command: ["wis2box", "pubsub" , "subscribe", "--topic", "wis2box/#"]
 
   mosquitto:

@@ -24,8 +24,8 @@ import logging
 from pygeoapi.process.base import BaseProcessor
 from synop2bufr import transform
 
-from wis2box_api.wis2box.publish import WIS2Publish
-from wis2box_api.wis2box.publish import handle_error
+from wis2box_api.wis2box.handle import DataHandler
+from wis2box_api.wis2box.handle import handle_error
 
 from wis2box_api.wis2box.station import Stations
 
@@ -133,7 +133,7 @@ class SynopPublishProcessor(BaseProcessor):
             channel = data['channel']
             notify = data['notify']
             # initialize the WIS2Publish object
-            wis2_publish = WIS2Publish(channel, notify)
+            data_handler = DataHandler(channel, notify)
         except Exception as err:
             return handle_error({err})
 
@@ -154,7 +154,7 @@ class SynopPublishProcessor(BaseProcessor):
                                        year=year,
                                        month=month)
         except Exception as err:
-            return wis2_publish.handle_error(f'synop2bufr raised Exception: {err}') # noqa
+            return handle_error(f'synop2bufr raised Exception: {err}') # noqa
 
         output_items = []
         for item in bufr_generator:
@@ -162,7 +162,7 @@ class SynopPublishProcessor(BaseProcessor):
 
         LOGGER.debug(f'synop2bufr-transform returned {len(output_items)} items') # noqa
 
-        return wis2_publish.process_items(output_items)
+        return data_handler.process_items(output_items)
 
     def __repr__(self):
         return '<submit> {}'.format(self.name)

@@ -22,46 +22,43 @@
 import logging
 
 from minio import Minio
-import os
 
 from io import BytesIO
 
 from typing import Any
 
+from wis2box_api.wis2box.storage import Storage
+
 from urllib.parse import urlparse
 
 LOGGER = logging.getLogger(__name__)
 
-STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
-STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
-STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
 
-
-class MinIOStorage():
+class MinIOStorage(Storage):
     """MinIO storage manager"""
-    def __init__(self, bucket_name, channel) -> None:
+    def __init__(self, name, channel) -> None:
+
+        super().__init__(name=name, channel=channel)
 
         is_secure = False
 
-        urlparsed = urlparse(STORAGE_SOURCE)
+        urlparsed = urlparse(self.source)
 
-        if STORAGE_SOURCE.startswith('https://'):
+        if self.source.startswith('https://'):
             is_secure = True
 
-        self.bucket_name = bucket_name
-        self.channel = channel
         self.client = Minio(endpoint=urlparsed.netloc,
-                            access_key=STORAGE_USERNAME,
-                            secret_key=STORAGE_PASSWORD,
+                            access_key=self.username,
+                            secret_key=self.password,
                             secure=is_secure)
 
     def get(self, identifier: str) -> Any:
 
-        LOGGER.debug(f'Getting object {self.channel}/{identifier} from bucket={self.bucket_name}') # noqa
+        LOGGER.debug(f'Getting object {self.channel}/{identifier} from bucket={self.name}') # noqa
         # Get data of an object.
         try:
             response = self.client.get_object(
-                self.bucket_name, object_name={self.channel}/{identifier})
+                self.name, object_name={self.channel}/{identifier})
             data = response.data
             response.close()
             response.release_conn()
@@ -74,8 +71,8 @@ class MinIOStorage():
     def put(self, data: bytes, identifier: str) -> bool:
 
         object_key = f'{self.channel}/{identifier}'
-        LOGGER.info(f'Putting data as object={object_key} in bucket={self.bucket_name}') # noqa
-        self.client.put_object(bucket_name=self.bucket_name,
+        LOGGER.info(f'Putting data as object={object_key} in bucket={self.name}') # noqa
+        self.client.put_object(bucket_name=self.name,
                                object_name=object_key,
                                data=BytesIO(data), length=-1,
                                part_size=10*1024*1024)
@@ -85,7 +82,7 @@ class MinIOStorage():
     def delete(self, identifier: str) -> bool:
 
         LOGGER.debug(f'Deleting object {self.channel}/{identifier}')
-        self.client.remove_object(self.bucket_name, {self.channel}/{identifier}) # noqa
+        self.client.remove_object(self.name, {self.channel}/{identifier}) # noqa
         return True
 
     def __repr__(self):

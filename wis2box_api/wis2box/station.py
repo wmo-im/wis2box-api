@@ -34,7 +34,7 @@ class Stations():
         self.features = []
         self._load_stations()
 
-    def get_valid_wsi(self, wsi: str):
+    def get_valid_wsi(self, wsi: str) -> bool:
         """
         Validates and returns WSI
 
@@ -48,9 +48,9 @@ class Stations():
             if station['properties']['wigos_station_identifier'] == wsi:
                 return True
 
-            return False
+        return False
 
-    def get_csv_string(self):
+    def get_csv_string(self) -> str:
         """Load stations into csv-string
 
         :returns: csv_string: csv string with station data

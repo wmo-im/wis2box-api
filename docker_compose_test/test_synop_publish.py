@@ -19,14 +19,17 @@ data = {
 }
 
 expected_response = {
-    "result": "success",
-    "messages transformed": 1,
-    "messages published": 1,
-    "files": [
-        "http://localhost/data/2023-01-19/wis/synop/test/WIGOS_0-20000-0-64400_20230119T060000.bufr4" # noqa
-    ],
-    "errors": [],
-    "warnings": []
+  "result": "success",
+  "messages transformed": 1,
+  "messages published": 1,
+  "data_items": [
+    {
+      "file_url": "http://localhost/data/2023-01-19/wis/synop/test/WIGOS_0-20000-0-64400_20230119T060000.bufr4", # noqa
+      "filename": "WIGOS_0-20000-0-64400_20230119T060000.bufr4"
+    }
+  ],
+  "errors": [],
+  "warnings": []
 }
 
 response = requests.post(url, headers=headers, json=data)

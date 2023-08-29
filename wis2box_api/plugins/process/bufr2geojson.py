@@ -21,6 +21,7 @@
 import logging
 from pygeoapi.process.base import BaseProcessor
 import requests
+import base64
 
 from bufr2geojson import transform as as_geojson
 
@@ -34,15 +35,26 @@ PROCESS_METADATA = {
     'keywords': [],
     'links': [],
     'inputs': {
-        "data_url": {
-            "title": "data_url (required)",
+        "file_url": {
+            "title": "file_url",
             "description": "URL to the BUFR file",
             "schema": {"type": "string"},
             "minOccurs": 1,
             "maxOccurs": 1,
             "metadata": None,
             "keywords": [],
-        }
+            "default": None
+        },
+        "data": {
+            "title": "data",
+            "description": "UTF-8 string of base64 encoded bytes to be converted to geoJSON",  # noqa
+            "schema": {"type": "string"},
+            "minOccurs": 1,
+            "maxOccurs": 1,
+            "metadata": None,
+            "keywords": [],
+            "default": None
+        },
     },
     'outputs': {
         'path': {
@@ -86,26 +98,45 @@ class Bufr2geojsonProcessor(BaseProcessor):
         """
 
         LOGGER.debug('Execute process')
-        data_url = data.get('data_url')
 
-        LOGGER.info(f"Executing bufr2geojson on: {data_url}")
-
-        # read the data from the URL
-        input_bytes = requests.get(data_url).content
-        LOGGER.debug('Generating GeoJSON features')
-        generator = as_geojson(input_bytes, serialize=False)
-
-        # iterate over the generator
-        # add the features to a list
         items = []
-        for collection in generator:
-            for id, item in collection.items():
-                if 'geojson' in item:
-                    items.append(item['geojson'])
-        LOGGER.info(f"Number of features found: {len(items)}")
+        input_bytes = None
+        error = ''
+        try:
+            if 'data_url' in data:
+                data_url = data['data_url']
+                LOGGER.debug(f"Executing bufr2geojson on: {data_url}")
+                # read the data from the URL
+                result = requests.get(data_url)
+                # raise an exception if the status code is not 200
+                result.raise_for_status()
+                # get the bytes from the response
+                input_bytes = result.content
+            elif 'data' in data:
+                base64_encoded_data = data['data']
+                LOGGER.debug(f"Executing bufr2geojson on: {base64_encoded_data}")  # noqa
+                # Convert the encoded data string to bytes
+                encoded_data_bytes = base64_encoded_data.encode('utf-8')
+                # Decode base64 encoded data
+                input_bytes = base64.b64decode(encoded_data_bytes)
+            else:
+                raise Exception('No data or data_url provided')
+            LOGGER.debug('Generating GeoJSON features')
+            generator = as_geojson(input_bytes, serialize=False)
+            # iterate over the generator
+            # add the features to a list
+            for collection in generator:
+                for id, item in collection.items():
+                    if 'geojson' in item:
+                        items.append(item['geojson'])
+            LOGGER.info(f"Number of features found: {len(items)}")
+        except Exception as e:
+            LOGGER.error(e)
+            error = str(e)
 
         mimetype = 'application/json'
         outputs = {
-            'items': items
+            'items': items,
+            'error': error
         }
         return mimetype, outputs

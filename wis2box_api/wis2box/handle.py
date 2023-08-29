@@ -36,8 +36,6 @@ import uuid
 
 from urllib.parse import urlparse
 
-from wis2box_api.wis2box.minio import MinIOStorage
-
 LOGGER = logging.getLogger(__name__)
 
 # Get broker connection details
@@ -47,12 +45,15 @@ BROKER_HOST = os.environ.get('WIS2BOX_BROKER_HOST')
 BROKER_PORT = os.environ.get('WIS2BOX_BROKER_PORT')
 BROKER_PUBLIC = os.environ.get('WIS2BOX_BROKER_PUBLIC').rstrip('/')
 
+STORAGE_TYPE = os.environ.get('WIS2BOX_STORAGE_TYPE')
 STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
 STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 
 DATA_OBJECT_MIMETYPES = {
     'bufr4': 'application/x-bufr',
     'grib2': 'application/x-grib2',
+    'grib': 'application/x-grib',
+    'cap': 'application/cap+xml',
     'geojson': 'application/json'
 }
 
@@ -81,7 +82,7 @@ class SecureHashAlgorithms(Enum):
     MD5 = 'md5'
 
 
-class WIS2Publish():
+class DataHandler():
 
     def __init__(self, channel, notify):
         # remove leading and trailing slashes
@@ -89,8 +90,14 @@ class WIS2Publish():
 
         self._notify = notify
         self._channel = channel
-        self._storage = MinIOStorage(bucket_name=STORAGE_PUBLIC,
-                                     channel=channel)
+
+        if STORAGE_TYPE in ['S3', 'minio', 's3', 'MINIO', 'MinIO']:
+            from wis2box_api.wis2box.minio import MinIOStorage
+            self._storage = MinIOStorage(name=STORAGE_PUBLIC,
+                                         channel=channel)
+        else:
+            LOGGER.error(f'Unknown storage type: {STORAGE_TYPE}')
+            raise Exception(f'Unknown storage type: {STORAGE_TYPE}')
 
     def _generate_checksum(self, bytes, algorithm: SecureHashAlgorithms) -> str:  # noqa
         """
@@ -118,7 +125,7 @@ class WIS2Publish():
         mimetype = 'application/json'
         errors = []
         warnings = []
-        urls = []
+        data = []
         result = 'failure'
 
         record_nr = 0
@@ -152,21 +159,34 @@ class WIS2Publish():
                     continue
 
             for fmt, the_data in item.items():
+                if fmt in ['_meta', 'errors', 'warnings']:
+                    continue
                 if fmt not in DATA_OBJECT_MIMETYPES:
                     LOGGER.error(f'Unknown format {fmt}')
                     continue
-                yyyymmdd = data_date.strftime('%Y-%m-%d')
-                storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
-                storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
-                try:
-                    self._storage.put(data=the_data, identifier=identifier)
-                    urls.append(storage_url)
-                except Exception as e:
-                    LOGGER.error(e)
-                    return handle_error(e)
+                filename = f'{identifier}.{fmt}'
+                if not self._notify:
+                    data.append(
+                        {
+                            'data': base64.b64encode(the_data).decode(),
+                            'filename': filename
+                        })
+                else:
+                    yyyymmdd = data_date.strftime('%Y-%m-%d')
+                    storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
+                    storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
+                    try:
+                        self._storage.put(data=the_data, identifier=identifier)
+                        data.append(
+                            {
+                                'file_url': storage_url,
+                                'filename': filename
+                            })
+                    except Exception as e:
+                        LOGGER.error(e)
+                        return handle_error(e)
 
-                notify_result = 'unknown'
-                if self._notify:
+                    notify_result = 'unknown'
                     try:
                         checksum_type = SecureHashAlgorithms.SHA512.value
                         checksum_value = self._generate_checksum(the_data, checksum_type) # noqa
@@ -199,7 +219,7 @@ class WIS2Publish():
             'result': result,
             "messages transformed": data_converted,
             "messages published": data_published,
-            "files": urls,
+            "data_items": data,
             "errors": errors,
             "warnings": warnings
         }

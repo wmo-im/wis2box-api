@@ -23,12 +23,16 @@ import logging
 
 from pygeoapi.process.base import BaseProcessor
 
-from wis2box_api.wis2box.publish import WIS2Publish
-from wis2box_api.wis2box.publish import handle_error
-
+from wis2box_api.wis2box.handle import handle_error
+from wis2box_api.wis2box.handle import DataHandler
 from wis2box_api.wis2box.station import Stations
+from wis2box_api.wis2box.csv_templates import default_mappings
 
 from csv2bufr import transform as transform_csv
+
+from pathlib import Path
+
+import json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -58,9 +62,9 @@ PROCESS_METADATA = {
             "metadata": None,
             "keywords": [],
         },
-        "mapping": {
+        "template": {
             "title": "Mapping",
-            "description": "Mapping file for CSV to BUFR conversion",
+            "description": "Mapping-template for CSV to BUFR conversion",
             "schema": {"type": "string"},
             "minOccurs": 1,
             "maxOccurs": 1,
@@ -91,53 +95,10 @@ PROCESS_METADATA = {
     },
     "example": {
         "inputs": {
-            "data":"wsi,year,month,day,hour,minute,latitude,longitude,slp,mslp,ppp,a,brmh\\\n0-20000-0-06700,2022,2,10,6,0,46.2475,6.12774,978.3,1029.9,-0.4,8,412.3",  # noqa
+            "data": "wsi_series,wsi_issuer,wsi_issue_number,wsi_local,wmo_block_number,wmo_station_number,station_type,year,month,day,hour,minute,latitude,longitude,station_height_above_msl,barometer_height_above_msl,station_pressure,msl_pressure,geopotential_height,thermometer_height,air_temperature,dewpoint_temperature,relative_humidity,method_of_ground_state_measurement,ground_state,method_of_snow_depth_measurement,snow_depth,precipitation_intensity,anemometer_height,time_period_of_wind,wind_direction,wind_speed,maximum_wind_gust_direction_10_minutes,maximum_wind_gust_speed_10_minutes,maximum_wind_gust_direction_1_hour,maximum_wind_gust_speed_1_hour,maximum_wind_gust_direction_3_hours,maximum_wind_gust_speed_3_hours,rain_sensor_height,total_precipitation_1_hour,total_precipitation_3_hours,total_precipitation_6_hours,total_precipitation_12_hours,total_precipitation_24_hours\n0,20000,0,15015,15,15,1,2022,3,31,0,0,47.77706163,23.94046026,503,504.43,100940,10104,1448,5,298.15,294.55,80.4,3,1,1,0,0.004,10,-10,30,3,30,5,40,9,20,11,2,4.7,5.3,7.9,9.5,11.4", # noqa
             "channel": "csv/test",
-            "notify": True,
-            "mapping": '''{
-                "inputDelayedDescriptorReplicationFactor": [],
-                "inputShortDelayedDescriptorReplicationFactor": [],
-                "inputExtendedDelayedDescriptorReplicationFactor": [],
-                "wigos_station_identifier": "data:wsi",
-                "number_header_rows": 1,
-                "column_names_row": 1,
-                "QUOTING": "QUOTE_NONE"
-                "header": [
-                    {"eccodes_key": "edition", "value": "const:4"},
-                    {"eccodes_key": "masterTableNumber", "value": "const:0"},
-                    {"eccodes_key": "updateSequenceNumber", "value": "const:0"},
-                    {"eccodes_key": "dataCategory", "value": "const:0"},
-                    {"eccodes_key": "internationalDataSubCategory", "value": "const:6"},
-                    {"eccodes_key": "masterTablesVersionNumber", "value": "const:36"},
-                    {"eccodes_key": "typicalYear", "value": "data:year"},
-                    {"eccodes_key": "typicalMonth", "value": "data:month"},
-                    {"eccodes_key": "typicalDay", "value": "data:day"},
-                    {"eccodes_key": "typicalHour", "value": "data:hour"},
-                    {"eccodes_key": "typicalMinute", "value": "data:minute"},
-                    {"eccodes_key": "numberOfSubsets", "value": "const:1"},
-                    {"eccodes_key": "observedData", "value": "const:1"},
-                    {"eccodes_key": "compressedData", "value": "const:0"},
-                    {"eccodes_key": "unexpandedDescriptors", "value": "array: 301150, 301011, 301012, 301021, 7031, 302001"}
-                ],
-                "data": [
-                    {"eccodes_key": "#1#wigosIdentifierSeries", "value": "metadata:wsi_series", "valid_min": "const:0", "valid_max": "const:0"},
-                    {"eccodes_key": "#1#wigosIssuerOfIdentifier", "value": "metadata:wsi_issuer", "valid_min": "const:0", "valid_max": "const:65534"},
-                    {"eccodes_key": "#1#wigosIssueNumber", "value": "metadata:wsi_issue_number", "valid_min": "const:0", "valid_max": "const:65534"},
-                    {"eccodes_key": "#1#wigosLocalIdentifierCharacter", "value": "metadata:wsi_local"},
-                    {"eccodes_key": "#1#year", "value": "data:year", "valid_min": "const:2022", "valid_max": "const:2025"},
-                    {"eccodes_key": "#1#month", "value": "data:month", "valid_min": "const:1", "valid_max": "const:12"},
-                    {"eccodes_key": "#1#day", "value": "data:day", "valid_min": "const:1", "valid_max": "const:31"},
-                    {"eccodes_key": "#1#hour", "value": "data:hour", "valid_min": "const:0", "valid_max": "const:23"},
-                    {"eccodes_key": "#1#minute", "value": "data:minute", "valid_min": "const:0", "valid_max": "const:59"},
-                    {"eccodes_key": "#1#latitude", "value": "data:latitude", "valid_min": "const:-90.0", "valid_max": "const:90.0"},
-                    {"eccodes_key": "#1#longitude", "value": "data:longitude", "valid_min": "const:-180.0", "valid_max": "const:180.0"},
-                    {"eccodes_key": "#1#heightOfBarometerAboveMeanSeaLevel", "value": "data:brmh", "valid_min": "const:-400.0", "valid_max": "const:12707.0"},
-                    {"eccodes_key": "#1#nonCoordinatePressure", "value": "data:slp", "valid_min": "const:0", "valid_max": "const:163820", "scale": "const:2", "offset": "const:0"},
-                    {"eccodes_key": "#1#pressureReducedToMeanSeaLevel", "value": "data:mslp", "valid_min": "const:0", "valid_max": "const:163820", "scale": "const:2", "offset": "const:0"},
-                    {"eccodes_key": "#1#3HourPressureChange", "value": "data:ppp", "valid_min": "const:-5000", "valid_max": "const:5220", "scale": "const:2", "offset": "const:0"},
-                    {"eccodes_key": "#1#characteristicOfPressureTendency", "value": "data:a", "valid_min": "const:0", "valid_max": "const:14"}
-                ]
-            }'''  # noqa
+            "notify": False,
+            "template": "aws_mappings.json"
         },
     },
 }
@@ -169,46 +130,63 @@ class CSVPublishProcessor(BaseProcessor):
         try:
             channel = data['channel']
             notify = data['notify']
-            # initialize the WIS2Publish object
-            wis2_publish = WIS2Publish(channel, notify)
+            # initialize the DataHandler
+            data_handler = DataHandler(channel, notify)
         except Exception as err:
             return handle_error({err})
 
         # Now call csv to BUFR
         try:
             csv_data = data['data']
-            mapping = data['mapping']
+            template = data['template']
+            # check if template starts with /data/wis2box, then load from file
+            if template.startswith('/data/wis2box'):
+                template_file = Path(template)
+                if not template_file.exists():
+                    return handle_error(f'No such file {template}')
+                with open(template_file, 'r') as f:
+                    mappings = json.load(f)
+            else:
+                # else check if template is in default_mappings
+                if template not in default_mappings:
+                    return handle_error(f'No mapping for {template}, options are: {default_mappings.keys()}') # noqa
+                mappings = default_mappings[template]
+            LOGGER.debug(f'Using mappings: {mappings}')
             # run the transform
             bufr_generator = transform_csv(data=csv_data,
-                                           mapping=mapping)
+                                           mappings=mappings)
         except Exception as err:
-            return wis2_publish.handle_error(f'csv2bufr raised Exception: {err}') # noqa
+            return handle_error(f'csv2bufr raised Exception: {err}') # noqa
 
         # init stations at execution to get latest stations
         stations = Stations()
 
         output_items = []
         for item in bufr_generator:
+            LOGGER.debug(f'Processing item: {item}')
             warnings = []
             errors = []
 
             wsi = item['_meta']['properties']['wigos_station_identifier']
 
             if 'result' in item['_meta']:
-                if item['_meta']['result']['code'] != 1:
-                    msg = item['_meta']['result']['message']
-                    error = f'Transform returned {msg} for wsi={wsi}'
-                    LOGGER.error(error)
-                    errors.append(error)
+                if 'errors' in item['_meta']['result']:
+                    for error in item['_meta']['result']['errors']:
+                        errors.append(error)
+                if 'warnings' in item['_meta']['result']:
+                    for warning in item['_meta']['result']['warnings']:
+                        errors.append(warning)
 
-            if stations.get_valid_wsi(wsi) is None:
+            if stations.get_valid_wsi(wsi) is False:
                 warning = f'Station {wsi} not in station list; skipping'
-                LOGGER.warning(warning)
                 warnings.append(warning)
+                # remove bufr4 from item
+                if 'bufr4' in item:
+                    del item['bufr4']
 
             item['warnings'] = warnings
             item['errors'] = errors
 
             output_items.append(item)
 
-        return wis2_publish.process_items(output_items)
+        return data_handler.process_items(output_items)

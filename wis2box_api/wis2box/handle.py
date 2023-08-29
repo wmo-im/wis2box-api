@@ -326,4 +326,4 @@ class DataHandler():
         except Exception as e:
             return f"Error publishing message: {e}"
 
-        return f"success"
+        return "success"

@@ -28,11 +28,14 @@ from wis2box_api.wis2box.handle import DataHandler
 from wis2box_api.wis2box.station import Stations
 from wis2box_api.wis2box.csv_templates import default_mappings
 
+import csv2bufr_templates as c2bt
+
 from csv2bufr import transform as transform_csv
 
 from pathlib import Path
 
 import json
+import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +73,7 @@ PROCESS_METADATA = {
             "maxOccurs": 1,
             "metadata": None,
             "keywords": [],
+            "default": "aws-template"
         },
         "notify": {
             "title": "Notify",
@@ -98,7 +102,7 @@ PROCESS_METADATA = {
             "data": "wsi_series,wsi_issuer,wsi_issue_number,wsi_local,wmo_block_number,wmo_station_number,station_type,year,month,day,hour,minute,latitude,longitude,station_height_above_msl,barometer_height_above_msl,station_pressure,msl_pressure,geopotential_height,thermometer_height,air_temperature,dewpoint_temperature,relative_humidity,method_of_ground_state_measurement,ground_state,method_of_snow_depth_measurement,snow_depth,precipitation_intensity,anemometer_height,time_period_of_wind,wind_direction,wind_speed,maximum_wind_gust_direction_10_minutes,maximum_wind_gust_speed_10_minutes,maximum_wind_gust_direction_1_hour,maximum_wind_gust_speed_1_hour,maximum_wind_gust_direction_3_hours,maximum_wind_gust_speed_3_hours,rain_sensor_height,total_precipitation_1_hour,total_precipitation_3_hours,total_precipitation_6_hours,total_precipitation_12_hours,total_precipitation_24_hours\n0,20000,0,15015,15,15,1,2022,3,31,0,0,47.77706163,23.94046026,503,504.43,100940,10104,1448,5,298.15,294.55,80.4,3,1,1,0,0.004,10,-10,30,3,30,5,40,9,20,11,2,4.7,5.3,7.9,9.5,11.4", # noqa
             "channel": "csv/test",
             "notify": False,
-            "template": "aws_mappings.json"
+            "template": "aws-template"
         },
     },
 }
@@ -139,18 +143,12 @@ class CSVPublishProcessor(BaseProcessor):
         try:
             csv_data = data['data']
             template = data['template']
-            # check if template starts with /data/wis2box, then load from file
-            if template.startswith('/data/wis2box'):
-                template_file = Path(template)
-                if not template_file.exists():
-                    return handle_error(f'No such file {template}')
-                with open(template_file, 'r') as f:
-                    mappings = json.load(f)
+            
+            if not os.path.isfile(template):
+                mappings = c2bt.load_template(template)
             else:
-                # else check if template is in default_mappings
-                if template not in default_mappings:
-                    return handle_error(f'No mapping for {template}, options are: {default_mappings.keys()}') # noqa
-                mappings = default_mappings[template]
+                with open(template) as fh:
+                    mappings = json.load(fh)
             LOGGER.debug(f'Using mappings: {mappings}')
             # run the transform
             bufr_generator = transform_csv(data=csv_data,
@@ -175,7 +173,7 @@ class CSVPublishProcessor(BaseProcessor):
                         errors.append(error)
                 if 'warnings' in item['_meta']['result']:
                     for warning in item['_meta']['result']['warnings']:
-                        errors.append(warning)
+                        warning.append(warning)
 
             if stations.get_valid_wsi(wsi) is False:
                 warning = f'Station {wsi} not in station list; skipping'

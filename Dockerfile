@@ -33,9 +33,10 @@ RUN apt-get install -y --no-install-recommends \
 RUN pip3 install git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && pip3 install --no-cache-dir https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.9.zip \
-    && pip3 install --no-cache-dir git+https://github.com/wmo-im/synop2bufr@wis2box-app-process \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.0.zip \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.6.3.zip
+    && pip3 install --no-cache-dir https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.5.1.zip \
+    && pip3 install --no-cache-dir https://github.com/wmo-im/csv2bufr//archive/master.zip \
+    && pip3 install --no-cache-dir https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.0.zip \	
+    && pip3 install --no-cache-dir https://github.com/wmo-im/csv2bufr-templates/archive/master.zip
 
 # install wis2box-api
 COPY . /app

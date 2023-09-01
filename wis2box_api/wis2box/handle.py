@@ -161,16 +161,25 @@ class DataHandler():
             for fmt, the_data in item.items():
                 if fmt in ['_meta', 'errors', 'warnings']:
                     continue
+                
                 if fmt not in DATA_OBJECT_MIMETYPES:
                     LOGGER.error(f'Unknown format {fmt}')
                     continue
+                elif the_data is None:
+                    LOGGER.error(f'No data for {fmt}')
+                    errors.append(f'No data returned for {identifier}.{fmt}')
+                
                 filename = f'{identifier}.{fmt}'
                 if not self._notify:
-                    data.append(
-                        {
-                            'data': base64.b64encode(the_data).decode(),
-                            'filename': filename
-                        })
+                    try:
+                        data.append(
+                            {
+                                'data': base64.b64encode(the_data).decode(),
+                                'filename': filename
+                            })
+                    except Exception as e:
+                        LOGGER.error(e)
+                        return handle_error(e)
                 else:
                     yyyymmdd = data_date.strftime('%Y-%m-%d')
                     storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   

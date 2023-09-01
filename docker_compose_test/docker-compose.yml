@@ -48,6 +48,8 @@ services:
     volumes:
       - ./tests/data:/data/wis2box:rw
     depends_on:
+      elasticsearch:
+        condition: service_healthy
       minio:
         condition: service_healthy
       mosquitto:

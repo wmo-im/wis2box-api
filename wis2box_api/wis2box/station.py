@@ -25,16 +25,18 @@ import logging
 
 import requests
 
+from wis2box_api.wis2box.env import LOCAL_API_URL
+
 LOGGER = logging.getLogger(__name__)
 
 
 class Stations():
 
     def __init__(self):
-        self.features = []
+        self.stations = {}
         self._load_stations()
 
-    def get_valid_wsi(self, wsi: str) -> bool:
+    def check_valid_wsi(self, wsi: str) -> bool:
         """
         Validates and returns WSI
 
@@ -44,11 +46,24 @@ class Stations():
         :returns: `str`, of valid wsi or `None`
         """
 
-        for station in self.features:
-            if station['properties']['wigos_station_identifier'] == wsi:
-                return True
+        if wsi in self.stations:
+            return True
+        else:
+            return False
 
-        return False
+    def get_station(self, wsi: str) -> dict:
+        """
+        Get station from wsi
+
+        :param wsi: WIGOS Station identifier
+
+        :returns: `dict`, of station
+        """
+
+        if wsi in self.stations:
+            return self.stations[wsi]
+        else:
+            return None
 
     def get_csv_string(self) -> str:
         """Load stations into csv-string
@@ -59,7 +74,7 @@ class Stations():
         LOGGER.info('Loading stations into csv-string')
 
         csv_output = []
-        for station in self.features:
+        for station in self.stations.values():
             wsi = station['properties']['wigos_station_identifier']
             tsi = wsi.split("-")[3]
             obj = {
@@ -87,14 +102,14 @@ class Stations():
         return csv_string
 
     def _load_stations(self):
-        """Load stations from WIS2 API
+        """Load stations from API
 
         :returns: None
         """
 
-        LOGGER.info("Loading stations from WIS2 API")
+        LOGGER.info("Loading stations from API")
 
-        stations_url = "http://localhost/oapi/collections/stations/items"  # noqa
+        stations_url = f"{LOCAL_API_URL}/collections/stations/items"
         LOGGER.info(stations_url)
 
         r = requests.get(stations_url, params={'f': 'json'}).json()
@@ -106,5 +121,6 @@ class Stations():
             raise Exception(f"No features in response from {stations_url}")
         else:
             for feature in r['features']:
-                self.features.append(feature)
-        LOGGER.info(f"Loaded {len(self.features)} stations from WIS2 API")
+                wsi = feature['properties']['wigos_station_identifier']
+                self.stations[wsi] = feature
+        LOGGER.info(f"Loaded {len(self.stations.keys())} stations from API")

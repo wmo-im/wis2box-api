@@ -21,38 +21,57 @@
 
 import logging
 
-import os
-
 from typing import Any
 
-LOGGER = logging.getLogger(__name__)
+from wis2box_api.wis2box.env import STORAGE_SOURCE
+from wis2box_api.wis2box.env import STORAGE_USERNAME
+from wis2box_api.wis2box.env import STORAGE_PASSWORD
 
-STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')
-STORAGE_USERNAME = os.environ.get('WIS2BOX_STORAGE_USERNAME')
-STORAGE_PASSWORD = os.environ.get('WIS2BOX_STORAGE_PASSWORD')
+LOGGER = logging.getLogger(__name__)
 
 
 class Storage():
     """storage manager base class"""
-    def __init__(self, name, channel) -> None:
+    def __init__(self, name) -> None:
 
         self.name = name
-        self.channel = channel
         self.source = STORAGE_SOURCE
         self.username = STORAGE_USERNAME
         self.password = STORAGE_PASSWORD
 
     def get(self, identifier: str) -> Any:
+        """
+        Get data from storage
 
-        raise NotImplementedError
+        :param identifier: identifier of data
+
+        :returns: `bytes`, of data
+        """
+
+        raise NotImplementedError()
 
     def put(self, data: bytes, identifier: str) -> bool:
+        """
+        Put data to storage
 
-        raise NotImplementedError
+        :param data: data to store
+        :param identifier: identifier of data
+
+        :returns: `bool`, of success
+        """
+
+        raise NotImplementedError()
 
     def delete(self, identifier: str) -> bool:
+        """
+        Delete data from storage
 
-        raise NotImplementedError
+        :param identifier: identifier of data
+
+        :returns: `bool`, of success
+        """
+
+        raise NotImplementedError()
 
     def __repr__(self):
         return f'<Storage ({self.source})>'

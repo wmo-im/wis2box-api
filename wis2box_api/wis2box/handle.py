@@ -20,34 +20,30 @@
 ###############################################################################
 
 import base64
-
-from datetime import datetime as dt
-from enum import Enum
-
 import json
 import logging
-
 import hashlib
-
-import os
-import paho.mqtt.publish as publish
-
 import uuid
+
+import paho.mqtt.publish as publish
 
 from urllib.parse import urlparse
 
+from datetime import datetime as dt
+
+from enum import Enum
+
+from wis2box_api.wis2box.env import BROKER_PUBLIC
+from wis2box_api.wis2box.env import BROKER_HOST
+from wis2box_api.wis2box.env import BROKER_PORT
+from wis2box_api.wis2box.env import BROKER_USERNAME
+from wis2box_api.wis2box.env import BROKER_PASSWORD
+
+from wis2box_api.wis2box.env import STORAGE_TYPE
+from wis2box_api.wis2box.env import STORAGE_PUBLIC
+from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL
+
 LOGGER = logging.getLogger(__name__)
-
-# Get broker connection details
-BROKER_USERNAME = os.environ.get('WIS2BOX_BROKER_USERNAME')
-BROKER_PASSWORD = os.environ.get('WIS2BOX_BROKER_PASSWORD')
-BROKER_HOST = os.environ.get('WIS2BOX_BROKER_HOST')
-BROKER_PORT = os.environ.get('WIS2BOX_BROKER_PORT')
-BROKER_PUBLIC = os.environ.get('WIS2BOX_BROKER_PUBLIC').rstrip('/')
-
-STORAGE_TYPE = os.environ.get('WIS2BOX_STORAGE_TYPE')
-STORAGE_PUBLIC = os.environ.get('WIS2BOX_STORAGE_PUBLIC')
-STORAGE_PUBLIC_URL = f"{os.environ.get('WIS2BOX_URL')}/data"
 
 DATA_OBJECT_MIMETYPES = {
     'bufr4': 'application/x-bufr',
@@ -93,8 +89,7 @@ class DataHandler():
 
         if STORAGE_TYPE in ['S3', 'minio', 's3', 'MINIO', 'MinIO']:
             from wis2box_api.wis2box.minio import MinIOStorage
-            self._storage = MinIOStorage(name=STORAGE_PUBLIC,
-                                         channel=channel)
+            self._storage = MinIOStorage(name=STORAGE_PUBLIC)
         else:
             LOGGER.error(f'Unknown storage type: {STORAGE_TYPE}')
             raise Exception(f'Unknown storage type: {STORAGE_TYPE}')
@@ -134,14 +129,16 @@ class DataHandler():
         # iterate over the output_items
         # each record contains either a key from DATA_OBJECT_MIMETYPES or errors and warnings # noqa
         for record in output_items:
+            # extract the data from the record
             if any(key in record for key in DATA_OBJECT_MIMETYPES):
                 data_items.append(record)
                 data_converted += 1
-            elif 'errors' not in record and 'warnings' not in record:
-                errors.append(f"Internal error for record-nr: {record_nr}")
-            else:
+
+            # extract the errors and warnings from the record
+            if 'errors' in record:
                 for error in record['errors']:
                     errors.append(error)
+            if 'warnings' in record:
                 for warning in record['warnings']:
                     warnings.append(warning)
             record_nr += 1
@@ -161,14 +158,17 @@ class DataHandler():
             for fmt, the_data in item.items():
                 if fmt in ['_meta', 'errors', 'warnings']:
                     continue
-                
+
                 if fmt not in DATA_OBJECT_MIMETYPES:
                     LOGGER.error(f'Unknown format {fmt}')
                     continue
                 elif the_data is None:
-                    LOGGER.error(f'No data for {fmt}')
-                    errors.append(f'No data returned for {identifier}.{fmt}')
-                
+                    if wsi:
+                        errors.append(f'No data returned WSI={wsi} and data_date={data_date}') # noqa
+                    else:
+                        errors.append(f'No data returned for WSI=(no WSI found) and data_date={data_date}') # noqa
+                    continue
+
                 filename = f'{identifier}.{fmt}'
                 if not self._notify:
                     try:
@@ -185,7 +185,7 @@ class DataHandler():
                     storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
                     storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
                     try:
-                        self._storage.put(data=the_data, identifier=identifier)
+                        self._storage.put(data=the_data, identifier=storage_path) # noqa
                         data.append(
                             {
                                 'file_url': storage_url,

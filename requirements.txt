@@ -1,7 +1,7 @@
 elasticsearch==7.16.2
+elasticsearch-dsl==7.4.1
 flask-cors
 json-merge-patch
-pygeometa
-elasticsearch-dsl==7.4.1
 minio
 paho-mqtt
+pygeometa

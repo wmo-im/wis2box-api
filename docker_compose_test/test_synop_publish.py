@@ -1,7 +1,7 @@
 import requests
 import sys
 
-url = 'http://localhost:4343/oapi/processes/wis2box-synop-process/execution'
+url = 'http://localhost:4343/oapi/processes/wis2box-synop2bufr/execution'
 
 headers = {
     'accept': 'application/json',

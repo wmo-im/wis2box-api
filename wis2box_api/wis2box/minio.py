@@ -36,9 +36,9 @@ LOGGER = logging.getLogger(__name__)
 
 class MinIOStorage(Storage):
     """MinIO storage manager"""
-    def __init__(self, name, channel) -> None:
+    def __init__(self, name) -> None:
 
-        super().__init__(name=name, channel=channel)
+        super().__init__(name=name)
 
         is_secure = False
 
@@ -54,11 +54,11 @@ class MinIOStorage(Storage):
 
     def get(self, identifier: str) -> Any:
 
-        LOGGER.debug(f'Getting object {self.channel}/{identifier} from bucket={self.name}') # noqa
+        LOGGER.debug(f'Getting object {identifier} from bucket={self.name}') # noqa
         # Get data of an object.
         try:
             response = self.client.get_object(
-                self.name, object_name={self.channel}/{identifier})
+                self.name, object_name={identifier})
             data = response.data
             response.close()
             response.release_conn()
@@ -70,7 +70,7 @@ class MinIOStorage(Storage):
 
     def put(self, data: bytes, identifier: str) -> bool:
 
-        object_key = f'{self.channel}/{identifier}'
+        object_key = f'{identifier}'
         LOGGER.info(f'Putting data as object={object_key} in bucket={self.name}') # noqa
         self.client.put_object(bucket_name=self.name,
                                object_name=object_key,
@@ -81,8 +81,8 @@ class MinIOStorage(Storage):
 
     def delete(self, identifier: str) -> bool:
 
-        LOGGER.debug(f'Deleting object {self.channel}/{identifier}')
-        self.client.remove_object(self.name, {self.channel}/{identifier}) # noqa
+        LOGGER.debug(f'Deleting object {identifier}')
+        self.client.remove_object(self.name, {identifier}) # noqa
         return True
 
     def __repr__(self):

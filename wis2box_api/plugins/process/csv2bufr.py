@@ -133,6 +133,8 @@ class CSVPublishProcessor(BaseProcessor):
             notify = data['notify']
             # initialize the DataHandler
             data_handler = DataHandler(channel, notify)
+            # get stations
+            stations = Stations()
         except Exception as err:
             return handle_error({err})
 
@@ -156,35 +158,40 @@ class CSVPublishProcessor(BaseProcessor):
         except Exception as err:
             return handle_error(f'csv2bufr raised Exception: {err}') # noqa
 
-        # init stations at execution to get latest stations
-        stations = Stations()
-
         output_items = []
-        for item in bufr_generator:
-            LOGGER.debug(f'Processing item: {item}')
-            warnings = []
-            errors = []
+        try:
+            for item in bufr_generator:
+                LOGGER.debug(f'Processing item: {item}')
+                warnings = []
+                errors = []
 
-            wsi = item['_meta']['properties']['wigos_station_identifier']
+                wsi = item['_meta']['properties']['wigos_station_identifier']
 
-            if 'result' in item['_meta']:
-                if 'errors' in item['_meta']['result']:
-                    for error in item['_meta']['result']['errors']:
-                        errors.append(error)
-                if 'warnings' in item['_meta']['result']:
-                    for warning in item['_meta']['result']['warnings']:
-                        warning.append(warning)
+                if 'result' in item['_meta']:
+                    if 'errors' in item['_meta']['result']:
+                        for error in item['_meta']['result']['errors']:
+                            errors.append(error)
+                    if 'warnings' in item['_meta']['result']:
+                        for warning in item['_meta']['result']['warnings']:
+                            warnings.append(warning)
 
-            if stations.check_valid_wsi(wsi) is False:
-                warning = f'Station {wsi} not in station list; skipping'
-                warnings.append(warning)
-                # remove bufr4 from item
-                if 'bufr4' in item:
-                    del item['bufr4']
+                if stations.check_valid_wsi(wsi) is False:
+                    warning = f'Station {wsi} not in station list; skipping'
+                    warnings.append(warning)
+                    # remove bufr4 from item
+                    if 'bufr4' in item:
+                        del item['bufr4']
 
-            item['warnings'] = warnings
-            item['errors'] = errors
+                item['warnings'] = warnings
+                item['errors'] = errors
 
+                output_items.append(item)
+        except Exception as err:
+            # create a dummy item with error
+            item = {
+                'warnings': [],
+                'errors': [f'Error processing item: {err}']
+            }
             output_items.append(item)
 
         return data_handler.process_items(output_items)

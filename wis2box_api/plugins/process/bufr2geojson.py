@@ -35,8 +35,8 @@ PROCESS_METADATA = {
     'keywords': [],
     'links': [],
     'inputs': {
-        "file_url": {
-            "title": "file_url",
+        "data_url": {
+            "title": "data_url",
             "description": "URL to the BUFR file",
             "schema": {"type": "string"},
             "minOccurs": 1,

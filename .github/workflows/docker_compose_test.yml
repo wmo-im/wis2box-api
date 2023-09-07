@@ -25,12 +25,7 @@ jobs:
           docker-compose up -d  --build
 
       - name: Wait for service to be ready
-        run: sleep 5 
-
-      - name: Run wis2box metadata station publish-collection
-        working-directory: docker_compose_test
-        run: |
-          docker exec -i wis2box-api-test-wis2box-management wis2box metadata station publish-collection
+        run: sleep 45 
 
       - name: Check status code API
         working-directory: docker_compose_test  

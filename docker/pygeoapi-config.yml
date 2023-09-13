@@ -115,3 +115,29 @@ resources:
         type: process
         processor:
             name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor
+
+    wis2box-bufr2geojson:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor
+
+    wis2box-oscar2feature:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.oscar2feature.Oscar2FeatureProcessor
+
+    wis2box-synop2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.synop2bufr.SynopPublishProcessor
+
+    wis2box-csv2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.csv2bufr.CSVPublishProcessor
+
+    wis2box-bufr2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.bufr2bufr.BufrPublishProcessor
+

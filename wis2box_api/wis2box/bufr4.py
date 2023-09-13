@@ -259,7 +259,7 @@ class ObservationDataBUFR():
             msg = f'Error processing subset: {err}'
             LOGGER.error(msg)
             output = {
-                'errors': [	msg	]
+                'errors': [msg]
             }
             return output
 

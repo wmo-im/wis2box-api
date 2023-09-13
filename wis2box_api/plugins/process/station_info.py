@@ -95,7 +95,7 @@ PROCESS_DEF = {
     },
     'example': {
         'inputs': {
-            'collection': 'urn:x-wmo:md:mwi:mwi_met_centre:surface-weather-observations'  # noqa
+            'collection': 'urn:x-wmo:md:dza:dza_met_centre:surface-weather-observations'  # noqa
         }
     }
 }
@@ -141,9 +141,14 @@ class StationInfoProcessor(BaseProcessor):
 
         try:
             collection_id = data['collection']
-            collection_config = CONFIG['resources'][collection_id]
-            index_url = collection_config['providers'][0]['data']
-            index = get_path_basename(index_url)
+            topic = 'notfound'
+            index = 'notfound'
+            if collection_id in CONFIG['resources']:
+                collection_config = CONFIG['resources'][collection_id]
+                index_url = collection_config['providers'][0]['data']
+                index = get_path_basename(index_url)
+                # topic is index with . replace by /
+                topic = index.replace('.', '/')
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)
@@ -164,7 +169,7 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        fc = self._load_stations(wigos_station_identifiers, collection_id)
+        fc = self._load_stations(wigos_station_identifiers, topic)
         if None in fc['features']:
             msg = 'Invalid WIGOS station identifier provided'
             LOGGER.error(msg)
@@ -198,18 +203,19 @@ class StationInfoProcessor(BaseProcessor):
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-        response = self.es.search(index=index, **query)
-        response_buckets = response['aggregations']['each']['buckets']
+        if index != 'notfound':
+            response = self.es.search(index=index, **query)
+            response_buckets = response['aggregations']['each']['buckets']
 
-        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets}
+            hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
 
-        for station in outputs['value']['features']:
-            station['properties']['num_obs'] = hits.get(station['id'], 0)
+            for station in outputs['value']['features']:
+                station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 
     def _load_stations(self, wigos_station_identifiers: list = [],
-                       collection_id: str = ''):
+                       topic: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
         stations_url = url_join(
             os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
@@ -229,10 +235,26 @@ class StationInfoProcessor(BaseProcessor):
                 stations_url, params={'resulttype': 'hits'}
             ).json()
 
-            fc = requests.get(
-                stations_url, params={
-                    'limit': r['numberMatched'], 'topic': collection_id}
-            ).json()
+        # get all stations
+        fc = requests.get(
+            stations_url, params={
+                'limit': r['numberMatched']}
+        ).json()
+
+        # filter by topic
+        ff = []
+        try:
+            for f in fc['features']:
+                if topic in f['properties']['topics']:
+                    ff.append(f)
+            fc['features'] = ff
+        except Exception as err:
+            LOGGER.error(err)
+            LOGGER.error('Error filtering stations by topic')
+            LOGGER.error('Returning empty feature collection')
+            fc['features'] = []
+        # after filter
+        LOGGER.info(f"Found {len(fc['features'])} stations for topic {topic}")
 
         return fc
 

@@ -25,7 +25,7 @@ import logging
 
 import requests
 
-from wis2box_api.wis2box.env import LOCAL_API_URL
+from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +35,39 @@ class Stations():
     def __init__(self):
         self.stations = {}
         self._load_stations()
+
+    def get_geometry(self, wsi: str) -> dict:
+        """
+        Get geometry from wsi
+
+        :param wsi: WIGOS Station identifier
+
+        :returns: `dict`, of geometryF
+        """
+
+        if wsi in self.stations:
+            return self.stations[wsi]['geometry']
+        else:
+            return None
+
+    def get_valid_wsi(self, wsi, tsi=None) -> str:
+        """
+        Validates and returns WSI
+
+        :param wsi: WIGOS Station identifier
+        :param tsi: Traditional Station identifier
+
+        :returns: `str`, of valid wsi or `None`
+        """
+
+        if wsi in self.stations:
+            return wsi
+        elif tsi is not None:
+            for station in self.stations:
+                # check if the tsi is contain in the string
+                if tsi in station['properties']['wigos_station_identifier']:
+                    return station['properties']['wigos_station_identifier']
+        return None
 
     def check_valid_wsi(self, wsi: str) -> bool:
         """
@@ -77,6 +110,11 @@ class Stations():
         for station in self.stations.values():
             wsi = station['properties']['wigos_station_identifier']
             tsi = wsi.split("-")[3]
+            barometer_height = None
+            if 'barometer_height' in station['properties']:
+                barometer_height = station['properties']['barometer_height']
+            else:
+                barometer_height = station['geometry']['coordinates'][2] + 1.25
             obj = {
                 'station_name': station['properties']['name'],
                 'wigos_station_identifier': wsi,
@@ -87,7 +125,7 @@ class Stations():
                 'elevation': station['geometry']['coordinates'][2],
                 'territory_name': station['properties']['territory_name'],
                 'wmo_region': station['properties']['wmo_region'],
-                'barometer_height': None
+                'barometer_height': barometer_height
             }
             csv_output.append(obj)
 
@@ -109,7 +147,7 @@ class Stations():
 
         LOGGER.info("Loading stations from API")
 
-        stations_url = f"{LOCAL_API_URL}/collections/stations/items"
+        stations_url = f"{WIS2BOX_DOCKER_API_URL}/collections/stations/items"
         LOGGER.info(stations_url)
 
         r = requests.get(stations_url, params={'f': 'json'}).json()

@@ -21,7 +21,7 @@
 
 import os
 
-LOCAL_API_URL = os.environ.get('WIS2BOX_LOCAL_API_URL', 'http://localhost/oapi') # noqa
+WIS2BOX_DOCKER_API_URL = os.environ.get('WIS2BOX_DOCKER_API_URL', 'http://wis2box-api:80/oapi') # noqa
 WIS2BOX_URL = os.environ.get('WIS2BOX_URL')
 
 BROKER_USERNAME = os.environ.get('WIS2BOX_BROKER_USERNAME')

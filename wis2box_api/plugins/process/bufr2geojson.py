@@ -18,11 +18,12 @@
 # under the License.
 #
 ###############################################################################
+
 import logging
-from pygeoapi.process.base import BaseProcessor
 import requests
 import base64
 
+from pygeoapi.process.base import BaseProcessor
 from bufr2geojson import transform as as_geojson
 
 LOGGER = logging.getLogger(__name__)
@@ -35,25 +36,25 @@ PROCESS_METADATA = {
     'keywords': [],
     'links': [],
     'inputs': {
-        "data_url": {
-            "title": "data_url",
-            "description": "URL to the BUFR file",
-            "schema": {"type": "string"},
-            "minOccurs": 1,
-            "maxOccurs": 1,
-            "metadata": None,
-            "keywords": [],
-            "default": None
+        'data_url': {
+            'title': 'data_url',
+            'description': 'URL to the BUFR file',
+            'schema': {'type': 'string'},
+            'minOccurs': 1,
+            'maxOccurs': 1,
+            'metadata': None,
+            'keywords': [],
+            'default': None
         },
-        "data": {
-            "title": "data",
-            "description": "UTF-8 string of base64 encoded bytes to be converted to geoJSON",  # noqa
-            "schema": {"type": "string"},
-            "minOccurs": 1,
-            "maxOccurs": 1,
-            "metadata": None,
-            "keywords": [],
-            "default": None
+        'data': {
+            'title': 'data',
+            'description': 'UTF-8 string of base64 encoded bytes to be converted to geoJSON',  # noqa
+            'schema': {'type': 'string'},
+            'minOccurs': 1,
+            'maxOccurs': 1,
+            'metadata': None,
+            'keywords': [],
+            'default': None
         },
     },
     'outputs': {
@@ -70,7 +71,7 @@ PROCESS_METADATA = {
     },
     'example': {
         'inputs': {
-            "data_url": "https://zmdwis2box.mgee.gov.zm/data/2023-07-27/wis/zmb/zambia_met_service/data/core/weather/surface-based-observations/synop/WIGOS_0-894-2-ZimbaSS_20230727T125400.bufr4", # noqa
+            'data_url': 'https://zmdwis2box.mgee.gov.zm/data/2023-07-27/wis/zmb/zambia_met_service/data/core/weather/surface-based-observations/synop/WIGOS_0-894-2-ZimbaSS_20230727T125400.bufr4', # noqa
         }
     }
 }
@@ -105,7 +106,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
         try:
             if 'data_url' in data:
                 data_url = data['data_url']
-                LOGGER.debug(f"Executing bufr2geojson on: {data_url}")
+                LOGGER.debug(f'Executing bufr2geojson on: {data_url}')
                 # read the data from the URL
                 result = requests.get(data_url)
                 # raise an exception if the status code is not 200
@@ -114,7 +115,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                 input_bytes = result.content
             elif 'data' in data:
                 base64_encoded_data = data['data']
-                LOGGER.debug(f"Executing bufr2geojson on: {base64_encoded_data}")  # noqa
+                LOGGER.debug(f'Executing bufr2geojson on: {base64_encoded_data}')  # noqa
                 # Convert the encoded data string to bytes
                 encoded_data_bytes = base64_encoded_data.encode('utf-8')
                 # Decode base64 encoded data
@@ -129,7 +130,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                 for id, item in collection.items():
                     if 'geojson' in item:
                         items.append(item['geojson'])
-            LOGGER.info(f"Number of features found: {len(items)}")
+            LOGGER.info(f'Number of features found: {len(items)}')
         except Exception as e:
             LOGGER.error(e)
             error = str(e)

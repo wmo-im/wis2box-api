@@ -20,25 +20,34 @@
 ###############################################################################
 
 import logging
+import base64
 
 from pygeoapi.process.base import BaseProcessor
-from synop2bufr import transform
 
-from wis2box_api.wis2box.handle import DataHandler
 from wis2box_api.wis2box.handle import handle_error
+from wis2box_api.wis2box.handle import DataHandler
 
-from wis2box_api.wis2box.station import Stations
+from wis2box_api.wis2box.bufr4 import ObservationDataBUFR
 
 LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'wis2box-synop2bufr',
-    'title': 'Process and publish FM-12 SYNOP',
+    'id': 'wis2box-bufr2bufr',
+    'title': 'Process and publish bufr data',
     'description': 'Converts the posted data to BUFR and publishes to specified topic',  # noqa
     'keywords': [],
     'links': [],
     'inputs': {
+        'data': {
+            'title': 'data',
+            'description': 'UTF-8 string of base64 encoded bytes',
+            'schema': {'type': 'string'},
+            'minOccurs': 1,
+            'maxOccurs': 1,
+            'metadata': None,
+            'keywords': [],
+        },
         'channel': {
             'title': {'en': 'Channel'},
             'description': {'en': 'Channel / topic to publish on'},
@@ -48,15 +57,6 @@ PROCESS_METADATA = {
             'metadata': None,
             'keywords': []
         },
-        'data': {
-            'title': 'FM 12-SYNOP',
-            'description': 'Input FM 12-SYNOP bulletin to convert to BUFR.',
-            'schema': {'type': 'string'},
-            'minOccurs': 1,
-            'maxOccurs': 1,
-            'metadata': None,
-            'keywords': [],
-        },
         'notify': {
             'title': 'Notify',
             'description': 'Enable WIS2 notifications',
@@ -65,30 +65,14 @@ PROCESS_METADATA = {
             'maxOccurs': 1,
             'metadata': None,
             'default': True
-        },
-        'year': {
-            'title': 'Year',
-            'description': 'Year (UTC) corresponding to FM 12-SYNOP bulletin',
-            'schema': {'type': 'integer'},
-            'minOccurs': 1,
-            'maxOccurs': 1,
-            'metadata': None,
-            'keywords': []
-        },
-        'month': {
-            'title': 'Month',
-            'description': 'Month (UTC) corresponding to FM 12-SYNOP bulletin',
-            'schema': {'type': 'integer'},
-            'minOccurs': 1,
-            'maxOccurs': 1,
-            'metadata': None,
-            'keywords': []
         }
     },
     'outputs': {
-        'result': {
-            'title': 'WIS2Publish result',
-            'description': 'WIS2Publish result',
+        'path': {
+            'title': {'en': 'ConverPublishResult'},
+            'description': {
+                'en': 'Conversion and publish result in JSON format'
+            },
             'schema': {
                 'type': 'object',
                 'contentMediaType': 'application/json'
@@ -97,17 +81,15 @@ PROCESS_METADATA = {
     },
     'example': {
         'inputs': {
-            'channel': 'synop/test',
-            'year': 2023,
-            'month': 1,
-            'notify': True,
-            'data': 'AAXX 19064 64400 36/// /0000 10102 20072 30068 40182 53001 333 20056 91003 555 10302 91018=' # noqa
-        }
-    }
+            'data': 'SVNNRDAyIExJSUIgMjEwMDAwIFJSQQ0NCkJVRlIAAOwEAAAWAABQAAAAAAACABAAB+YDFQAAAAAACQAAAYDHVgAAwQAgrCanpyoiqaGqqSeQEBAQEBAQEBAQL8xqgAYqvgJXWq5Q0iiRQXP/+98PuhNAUBAGQ0X7QO2ADIH0AGQAA//+mHMFz6hQCCZALgH9BxQD////////////////////////////////////8OP9HI/+AB+gAABkP9AAP///+AZD9EADVev0QANFqB9GCf2JoGf39v//+6YCATv//////3/////////4AAAAf//////7/6P////8P/wCye///8A3Nzc3DQ0K', # noqa
+            'channel': 'bufr/test',
+            'notify': False
+        },
+    },
 }
 
 
-class SynopPublishProcessor(BaseProcessor):
+class BufrPublishProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
         """
@@ -116,6 +98,7 @@ class SynopPublishProcessor(BaseProcessor):
         :param processor_def: provider definition
         :returns: pygeoapi.process.synop-form.submit
         """
+
         super().__init__(processor_def, PROCESS_METADATA)
 
     def execute(self, data):
@@ -132,46 +115,25 @@ class SynopPublishProcessor(BaseProcessor):
         try:
             channel = data['channel']
             notify = data['notify']
-            # initialize the WIS2Publish object
+            # initialize the DataHandler
             data_handler = DataHandler(channel, notify)
         except Exception as err:
             return handle_error({err})
 
-        # initialize the Stations object at execute
-        # stations might have been updated since the process was initialized
-        stations = Stations()
-        # get the station metadata as a CSV string
-        metadata = stations.get_csv_string()
-
-        # Now call synop to BUFR
+        # Now call bufr to BUFR
         try:
-            fm12 = data['data']
-            year = data['year']
-            month = data['month']
-            # run the transform
-            bufr_generator = transform(data=fm12,
-                                       metadata=metadata,
-                                       year=year,
-                                       month=month)
+            base64_encoded_data = data['data']
+            LOGGER.debug(f'Executing bufr2bufr on: {base64_encoded_data}')  # noqa
+            # Convert the encoded data string to bytes
+            encoded_data_bytes = base64_encoded_data.encode('utf-8')
+            # Decode base64 encoded data
+            input_bytes = base64.b64decode(encoded_data_bytes)
+            obs_bufr = ObservationDataBUFR(input_bytes)
+            LOGGER.info(f'Size of input_bytes: {len(input_bytes)}')
+            output_items = obs_bufr.process_data()
+            for output_item in output_items:
+                LOGGER.info(f'Output item: {output_item}')
         except Exception as err:
-            return handle_error(f'synop2bufr raised Exception: {err}') # noqa
-
-        output_items = []
-        try:
-            for item in bufr_generator:
-                LOGGER.info(item)
-                output_items.append(item)
-        except Exception as err:
-            # create a dummy item with error
-            item = {
-                'warnings': [],
-                'errors': [f'Error in iterator: {err}']
-            }
-            output_items.append(item)
-
-        LOGGER.debug(f'synop2bufr-transform returned {len(output_items)} items') # noqa
+            return handle_error(f'bufr2bufr raised Exception: {err}') # noqa
 
         return data_handler.process_items(output_items)
-
-    def __repr__(self):
-        return '<submit> {}'.format(self.name)

@@ -64,11 +64,11 @@ def handle_error(error):
 
     mimetype = 'application/json'
     errors = []
-    errors.append(f"{error}")
+    errors.append(f'{error}')
     outputs = {
-        "result": 'failure',
-        "errors": errors,
-        "warnings": []
+        'result': 'failure',
+        'errors': errors,
+        'warnings': []
     }
     return mimetype, outputs
 
@@ -164,9 +164,9 @@ class DataHandler():
                     continue
                 elif the_data is None:
                     if wsi:
-                        errors.append(f'No data returned WSI={wsi} and data_date={data_date}') # noqa
+                        errors.append(f'No data returned WSI={wsi} and timestamp={data_date}') # noqa
                     else:
-                        errors.append(f'No data returned for WSI=(no WSI found) and data_date={data_date}') # noqa
+                        errors.append(f'No data returned for WSI=(no WSI found) and timestamp={data_date}') # noqa
                     continue
 
                 filename = f'{identifier}.{fmt}'
@@ -211,11 +211,11 @@ class DataHandler():
                             wsi=wsi)
                     except Exception as e:
                         LOGGER.error(e)
-                        errors.append(f"error hashing: {e}")
+                        errors.append(f'error hashing: {e}')
                     if notify_result == 'success':
                         data_published += 1
                     else:
-                        errors.append(f"error publishing WIS2-notification: {notify_result}") # noqa
+                        errors.append(f'error publishing WIS2-notification: {notify_result}') # noqa
 
         if data_converted > 0 and errors == [] and warnings == []:
             result = 'success'
@@ -226,11 +226,11 @@ class DataHandler():
 
         outputs = {
             'result': result,
-            "messages transformed": data_converted,
-            "messages published": data_published,
-            "data_items": data,
-            "errors": errors,
-            "warnings": warnings
+            'messages transformed': data_converted,
+            'messages published': data_published,
+            'data_items': data,
+            'errors': errors,
+            'warnings': warnings
         }
 
         return mimetype, outputs
@@ -292,12 +292,12 @@ class DataHandler():
             }
         except Exception as e:
             LOGGER.error(e)
-            return f"Error creating message: {e}"
+            return f'Error creating message: {e}'
         LOGGER.debug(msg)
 
         try:
             topic = f'origin/a/wis2/{self._channel}'
-            LOGGER.info(f"Publishing to {topic} on {BROKER_PUBLIC}")
+            LOGGER.info(f'Publishing to {topic} on {BROKER_PUBLIC}')
             # parse public broker url
             broker_public = urlparse(BROKER_PUBLIC)
             public_auth = {
@@ -331,8 +331,8 @@ class DataHandler():
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug("Message successfully published")
+            LOGGER.debug('Message successfully published')
         except Exception as e:
-            return f"Error publishing message: {e}"
+            return f'Error publishing message: {e}'
 
-        return "success"
+        return 'success'

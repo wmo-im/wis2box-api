@@ -30,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'wis2box-bufr2geojson',
+    'id': 'bufr2geojson',
     'title': 'Convert BUFR to geoJSON',  # noqa
     'description': 'Download bufr from URL and convert file-content to geoJSON',  # noqa
     'keywords': [],

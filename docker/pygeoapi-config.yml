@@ -116,7 +116,7 @@ resources:
         processor:
             name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor
 
-    wis2box-bufr2geojson:
+    bufr2geojson:
       type: process
       processor:
         name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor

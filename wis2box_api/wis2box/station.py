@@ -23,9 +23,9 @@ import csv
 import io
 import logging
 
-import requests
+from elasticsearch import Elasticsearch
 
-from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
+from wis2box_api.wis2box.env import API_BACKEND_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -109,7 +109,8 @@ class Stations():
         csv_output = []
         for station in self.stations.values():
             wsi = station['properties']['wigos_station_identifier']
-            tsi = wsi.split("-")[3]
+            if '-' in wsi and len(wsi.split("-")) == 4:
+                tsi = wsi.split("-")[3]
             barometer_height = None
             if 'barometer_height' in station['properties']:
                 barometer_height = station['properties']['barometer_height']
@@ -145,20 +146,25 @@ class Stations():
         :returns: None
         """
 
-        LOGGER.info("Loading stations from API")
+        LOGGER.info("Loading stations from backend")
 
-        stations_url = f"{WIS2BOX_DOCKER_API_URL}/collections/stations/items"
-        LOGGER.info(stations_url)
+        stations = {}
 
-        r = requests.get(stations_url, params={'f': 'json'}).json()
-        if 'features' not in r:
-            LOGGER.error("No features in response")
-            raise Exception(f"No features in response from {stations_url}")
-        elif len(r['features']) == 0:
-            LOGGER.error("No features in response")
-            raise Exception(f"No features in response from {stations_url}")
-        else:
-            for feature in r['features']:
-                wsi = feature['properties']['wigos_station_identifier']
-                self.stations[wsi] = feature
-        LOGGER.info(f"Loaded {len(self.stations.keys())} stations from API")
+        try:
+            es = Elasticsearch(API_BACKEND_URL)
+            nbatch = 50
+            res = es.search(index="stations", query={"match_all": {}}, size=nbatch) # noqa
+            if len(res['hits']['hits']) == 0:
+                LOGGER.debug('No stations found')
+            for hit in res['hits']['hits']:
+                stations[hit['_source']['id']] = hit['_source']
+            while len(res['hits']['hits']) > 0:
+                res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=len(stations)) # noqa
+                for hit in res['hits']['hits']:
+                    stations[hit['_source']['id']] = hit['_source']
+        except Exception as err:
+            LOGGER.error(f'Failed to load stations from backend: {err}')
+
+        self.stations = stations
+
+        LOGGER.info(f"Loaded {len(self.stations.keys())} stations from backend") # noqa

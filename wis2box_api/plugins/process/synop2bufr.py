@@ -141,6 +141,8 @@ class SynopPublishProcessor(BaseProcessor):
         stations = Stations()
         # get the station metadata as a CSV string
         metadata = stations.get_csv_string()
+        if metadata is None:
+            return handle_error('No stations found')
 
         # Now call synop to BUFR
         try:

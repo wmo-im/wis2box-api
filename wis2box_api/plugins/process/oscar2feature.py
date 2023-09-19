@@ -133,6 +133,10 @@ class Oscar2FeatureProcessor(BaseProcessor):
         except Exception as err:
             return self.handle_error(f'{err}') # noqa
 
+        # take the first wigos_station_identifier if there are more than one
+        if ',' in station['wigos_station_identifier']:
+            station['wigos_station_identifier'] = station['wigos_station_identifier'].split(',')[0] # noqa
+
         territory_name = ''
         t_name = station.get('territory_name', '')
         if t_name not in [None, '']:

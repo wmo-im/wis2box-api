@@ -130,15 +130,16 @@ class Stations():
             }
             csv_output.append(obj)
 
-        string_buffer = io.StringIO()
-        csv_writer = csv.DictWriter(string_buffer, fieldnames=csv_output[0].keys())  # noqa
-        csv_writer.writeheader()
-        csv_writer.writerows(csv_output)
-        csv_string = string_buffer.getvalue()
-        csv_string = csv_string.replace("\r\n", "\n")  # noqa make sure *nix line endings
-        string_buffer.close()
-
-        return csv_string
+        if len(csv_output) > 0:
+            string_buffer = io.StringIO()
+            csv_writer = csv.DictWriter(string_buffer, fieldnames=csv_output[0].keys())  # noqa
+            csv_writer.writeheader()
+            csv_writer.writerows(csv_output)
+            csv_string = string_buffer.getvalue()
+            string_buffer.close()
+            return csv_string
+        else:
+            return None
 
     def _load_stations(self):
         """Load stations from API

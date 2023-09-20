@@ -33,7 +33,7 @@ RUN apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywcmp/archive/refs/tags/0.4.0.zip \
-    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.7.3.zip \
+    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.7.4.zip \
     https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.0.zip \
     https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip  \
     https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.6.3.zip \

@@ -18,17 +18,19 @@ data = {
 }
 
 expected_response = {
-  "result": "success",
-  "messages transformed": 1,
-  "messages published": 0,
-  "data_items": [
+  'result': 'partial success',
+  'messages transformed': 1,
+  'messages published': 0,
+  'data_items': [
     {
-      "data": "QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5gMfAAAAAAALAAABgMGWx2AAAVMABOIAAAMTUwMTUAAAAAAAAAAAAAAB4H//////////////////////////+vzG+ABpHZUm5gfCNGEap///////////////////////////+duD8v/////+CZAB9P/3R3cw+h////////////////////////////////////////////////8wiAAX//////////Af////gP////////////////////////////////////+AyP//////////////////////////+J/YPAPff2DwGT4goBadMCgN3//////////////////////////////////////////A+j/f/AMH/QDZ/oBQf0AYH6AHP////////////////////////////////////////////////////////////////////////////////////8A3Nzc3", # noqa
-      "filename": "WIGOS_0-20000-0-15015_20220331T000000.bufr4"
+      'data': 'QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5gMfAAAAAAALAAABgMGWx2AAAVMABOIAAAMTUwMTUAAAAAAAAAAAAAAB4H//////////////////////////+vzG+ABpHZUm5gfCNGEap///////////////////////////+du////////+CZAB9P/3R3cw+h////////////////////////////////////////////////8wiAAX//////////Af////gP////////////////////////////////////+AyP///////////////////////////9/YPAPff2DwGT4goBadMCgN3//////////////////////////////////////////A+j/f/AMH/QDZ/oBQf0AYH6AHP////////////////////////////////////////////////////////////////////////////////////8A3Nzc3',
+      'filename': 'WIGOS_0-20000-0-15015_20220331T000000.bufr4'
     }
   ],
-  "errors": [],
-  "warnings": []
+  'errors': [],
+  'warnings': [
+    '#1#pressureReducedToMeanSeaLevel: Value (10104.0) out of valid range (50000 - 150000).; Element set to missing'
+    ]
 }
 
 response = requests.post(url, headers=headers, json=data)

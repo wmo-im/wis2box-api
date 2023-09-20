@@ -1,6 +1,7 @@
 elasticsearch==7.16.2
 elasticsearch-dsl==7.4.1
 flask-cors
+iso3166
 json-merge-patch
 minio
 paho-mqtt

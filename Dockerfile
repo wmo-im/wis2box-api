@@ -31,12 +31,13 @@ RUN apt-get install -y --no-install-recommends \
 
 # install pygeoapi, pywcmp, pymetdecoder, synop2bufr, csv2bufr, bufr2geojson
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/pywcmp/archive/master.zip \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip \
-    #&& pip3 install --no-cache-dir https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.5.1.zip \ 
-    && pip3 install git+https://github.com/wmo-im/synop2bufr.git@rory-logging \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.7.1.zip \
-    && pip3 install --no-cache-dir https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.0.zip 	
+    && pip3 install --no-cache-dir \
+    https://github.com/wmo-im/pywcmp/archive/refs/tags/0.4.0.zip \
+    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.7.4.zip \
+    https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.0.zip \
+    https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip  \
+    https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.6.3.zip \
+    https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.6.2.zip
 
 # install wis2box-api
 COPY . /app
@@ -45,7 +46,6 @@ COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
     && pip3 install -e . \
-    && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

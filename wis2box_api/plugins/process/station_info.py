@@ -23,9 +23,8 @@ from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import os
 import logging
-import requests
 
-from pygeoapi.util import yaml_load, url_join, get_path_basename
+from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 
@@ -217,29 +216,25 @@ class StationInfoProcessor(BaseProcessor):
     def _load_stations(self, wigos_station_identifiers: list = [],
                        topic: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
-        stations_url = url_join(
-            os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
-        )
 
-        if wigos_station_identifiers:
-
-            for wsi in wigos_station_identifiers:
-                r = requests.get(f'{stations_url}/{wsi}')
-                if r.ok:
-                    fc['features'].append(r.json())
-                else:
-                    fc['features'].append(None)
-
-        else:
-            r = requests.get(
-                stations_url, params={'resulttype': 'hits'}
-            ).json()
-
-        # get all stations
-        fc = requests.get(
-            stations_url, params={
-                'limit': r['numberMatched']}
-        ).json()
+        # load stations from backend
+        LOGGER.info("Loading stations from backend")
+        es = Elasticsearch(os.getenv('WIS2BOX_API_BACKEND_URL'))
+        nbatch = 50
+        res = es.search(index="stations", query={"match_all": {}}, size=nbatch)
+        if len(res['hits']['hits']) == 0:
+            LOGGER.error('No stations found')
+            return fc
+        for hit in res['hits']['hits']:
+            fc['features'].append(hit['_source'])
+        while len(res['hits']['hits']) == nbatch:
+            res = es.search(index="stations",
+                            query={"match_all": {}},
+                            size=nbatch,
+                            from_=len(fc['features']))
+            for hit in res['hits']['hits']:
+                fc['features'].append(hit['_source'])
+        LOGGER.info(f"Found {len(fc['features'])} stations")
 
         # filter by topic
         ff = []

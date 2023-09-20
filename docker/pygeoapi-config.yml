@@ -121,7 +121,7 @@ resources:
       processor:
         name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor
 
-    wis2box-oscar2feature:
+    oscar2feature:
         type: process
         processor:
             name: wis2box_api.plugins.process.oscar2feature.Oscar2FeatureProcessor

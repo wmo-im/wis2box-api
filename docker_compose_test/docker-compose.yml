@@ -40,7 +40,7 @@ services:
     mem_limit: 1g
     memswap_limit: 1g
     restart: always
-    image: ghcr.io/wmo-im/wis2box-management:1.0b4
+    image: ghcr.io/wmo-im/wis2box-management:latest
     env_file:
       - test.env
     volumes:
@@ -54,8 +54,17 @@ services:
         condition: service_started
       wis2box-api:
         condition: service_healthy
-    command: ["wis2box", "pubsub" , "subscribe", "--topic", "wis2box/#"]
+    command: ["wis2box", "pubsub" , "subscribe"]
 
+  wis2box-auth:
+    container_name: wis2box-api-test-wis2box-auth
+    restart: always
+    image: ghcr.io/wmo-im/wis2box-auth:latest
+    env_file:
+      - test.env
+    volumes:
+      - /tmp:/data/wis2box:rw
+    
   mosquitto:
     container_name: wis2box-api-test-mosquitto
     restart: always

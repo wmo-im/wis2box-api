@@ -138,10 +138,11 @@ class SynopPublishProcessor(BaseProcessor):
             return handle_error({err})
 
         # initialize the Stations object at execute
-        # stations might have been updated since the process was initialized
         stations = Stations()
         # get the station metadata as a CSV string
         metadata = stations.get_csv_string()
+        if metadata is None:
+            return handle_error('No stations found')
 
         # Now call synop to BUFR
         try:
@@ -159,7 +160,20 @@ class SynopPublishProcessor(BaseProcessor):
         output_items = []
         try:
             for item in bufr_generator:
-                LOGGER.info(item)
+                LOGGER.debug(f'Processing item: {item}')
+                warnings = []
+                errors = []
+
+                if 'result' in item['_meta']:
+                    if 'errors' in item['_meta']['result']:
+                        for error in item['_meta']['result']['errors']:
+                            errors.append(error)
+                    if 'warnings' in item['_meta']['result']:
+                        for warning in item['_meta']['result']['warnings']:
+                            warnings.append(warning)
+                item['warnings'] = warnings
+                item['errors'] = errors
+
                 output_items.append(item)
         except Exception as err:
             # create a dummy item with error

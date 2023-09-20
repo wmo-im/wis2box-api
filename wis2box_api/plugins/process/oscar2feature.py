@@ -20,7 +20,10 @@
 ###############################################################################
 
 import logging
-import requests
+
+from iso3166 import countries
+
+from pyoscar import OSCARClient
 
 from pygeoapi.process.base import BaseProcessor
 
@@ -28,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'wis2box-oscar2feature',
+    'id': 'oscar2feature',
     'title': 'Query OSCAR and return station metadata for wis2box',
     'description': 'Query OSCAR and return station metadata for wis2box',
     'keywords': [],
@@ -64,6 +67,24 @@ PROCESS_METADATA = {
 }
 
 OSCAR_STATION_URL = 'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/' # noqa
+
+WMO_RAS = {
+    1: 'I',
+    2: 'II',
+    3: 'III',
+    4: 'IV',
+    5: 'V',
+    6: 'VI'
+}
+
+WMDR_RAS = {
+    'africa': 'I',
+    'asia': 'II',
+    'southAmerica': 'III',
+    'northCentralAmericaCaribbean': 'IV',
+    'southWestPacific': 'V',
+    'europe': 'VI'
+}
 
 
 class Oscar2FeatureProcessor(BaseProcessor):
@@ -104,60 +125,63 @@ class Oscar2FeatureProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
-        wmo_regions = {
-            'Africa': 'I',
-            'Asia': 'II',
-            'South America': 'III',
-            'North America, Central America and the Caribbean': 'IV',
-            'South-West Pacific': 'V',
-            'Europe': 'VI',
-            'Antartica': 'VII'
-        }
+        wsi = data.get('wigos_station_identifier')
+        client = OSCARClient(env='prod')
 
-        wis2box_station = {}
-        wigos_id = data.get('wigos_station_identifier')
-        path = '/surface/rest/api/search/station?wigosId='+wigos_id
-        page_path = f'{path}'
-        headers = {
-            'User-Agent': 'wis2box-api: https://github.com/wmo-im/wis2box-api'
-        }
-        res = requests.get('http://oscar.wmo.int'+page_path, headers=headers)
-        if res.status_code != 200:
-            return self.handle_error(f'OSCAR request failed: {res.status_code}') # noqa
+        try:
+            station = client.get_station_report(wsi, format_='XML', summary=True) # noqa
+        except Exception as err:
+            return self.handle_error(f'{err}') # noqa
 
-        json_data = res.json()
-        oscar_result = None
-        if 'stationSearchResults' in json_data:
-            for result in json_data['stationSearchResults']:
-                oscar_result = result
+        # take the first wigos_station_identifier if there are more than one
+        if ',' in station['wigos_station_identifier']:
+            station['wigos_station_identifier'] = station['wigos_station_identifier'].split(',')[0] # noqa
 
-        if oscar_result is None:
-            return self.handle_error(f'Station with WIGOS identifier {wigos_id} not found in OSCAR') # noqa
-        else:
-            wis2box_station = {
-                'id': oscar_result['wigosId'],
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [
-                        oscar_result['longitude'],
-                        oscar_result['latitude'],
-                        oscar_result['elevation']
-                    ]
-                },
-                'properties': {
-                    'name': oscar_result['name'],
-                    'wigos_station_identifier': oscar_result['wigosId'],
-                    'facility_type': oscar_result['stationTypeName'],
-                    'territory_name': oscar_result['territory'],
-                    'barometer_height': None,
-                    'wmo_region': wmo_regions[oscar_result['region']],
-                    'url': OSCAR_STATION_URL+oscar_result['wigosId'],
-                    'topics': [],
-                    'status': oscar_result['stationDeclaredStatusCode'],
-                    'id': oscar_result['wigosId']
-                }
+        territory_name = ''
+        t_name = station.get('territory_name', '')
+        if t_name not in [None, '']:
+            try:
+                territory_name = countries.get(t_name).name
+            except KeyError:
+                LOGGER.error(f'Country code {t_name} not found in ISO3166')
+
+        try:
+            wmo_region = WMO_RAS[station['wmo_region']]
+        except KeyError:
+            try:
+                wmo_region = WMDR_RAS[station['wmo_region']]
+            except KeyError:
+                wmo_region = ''
+
+        tsi = ''
+        if station['wigos_station_identifier'].startswith('0-20000'):
+            tsi = station['wigos_station_identifier'].split('-')[-1]  # noqa
+
+        wis2box_station = {
+            'id': station['wigos_station_identifier'],
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [
+                    station.get('longitude', ''),
+                    station.get('latitude', ''),
+                    station.get('elevation', '')
+                ]
+            },
+            'properties': {
+                'name': station.get('station_name', ''),
+                'wigos_station_identifier': station.get('wigos_station_identifier', ''), # noqa
+                'traditional_station_identifier': tsi,
+                'facility_type': station.get('facility_type', ''),
+                'territory_name': territory_name,
+                'barometer_height': station.get('barometer_height', ''),
+                'wmo_region': wmo_region,
+                'url': OSCAR_STATION_URL+station.get('wigos_station_identifier', ''), # noqa
+                'topics': [],
+                'status': 'operational',
+                'id': wsi
             }
+        }
 
         mimetype = 'application/json'
         outputs = {

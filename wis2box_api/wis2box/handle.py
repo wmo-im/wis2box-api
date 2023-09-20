@@ -296,7 +296,10 @@ class DataHandler():
         LOGGER.debug(msg)
 
         try:
-            topic = f'origin/a/wis2/{self._channel}'
+            topic = self._channel
+            # if topic does not start with 'origin/a/wis2/' add it
+            if not topic.startswith('origin/a/wis2/'):
+                topic = f'origin/a/wis2/{topic}'
             LOGGER.info(f'Publishing to {topic} on {BROKER_PUBLIC}')
             # parse public broker url
             broker_public = urlparse(BROKER_PUBLIC)

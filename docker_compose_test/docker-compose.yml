@@ -58,9 +58,12 @@ services:
 
   wis2box-auth:
     container_name: wis2box-api-test-wis2box-auth
+    restart: always
     image: ghcr.io/wmo-im/wis2box-auth:latest
     env_file:
       - test.env
+    volumes:
+      - /tmp:/data/wis2box:rw
     
   mosquitto:
     container_name: wis2box-api-test-mosquitto

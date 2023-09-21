@@ -170,6 +170,7 @@ class SynopPublishProcessor(BaseProcessor):
                             errors.append(error)
                     if 'warnings' in item['_meta']['result']:
                         for warning in item['_meta']['result']['warnings']:
+                            warning.replace('not found in station file','not in station list; skipping') # noqa
                             warnings.append(warning)
                 item['warnings'] = warnings
                 item['errors'] = errors

@@ -148,6 +148,9 @@ class StationInfoProcessor(BaseProcessor):
                 index = get_path_basename(index_url)
                 # topic is index with . replace by /
                 topic = index.replace('.', '/')
+                # topic should start with origin/a/wis2
+                if topic.startswith('origin/a/wis2') is False:
+                    topic = 'origin/a/wis2/' + topic
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)

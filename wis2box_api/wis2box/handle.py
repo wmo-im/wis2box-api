@@ -85,7 +85,7 @@ class DataHandler():
         channel = channel.strip('/')
 
         self._notify = notify
-        self._channel = channel
+        self._channel = channel.replace('origin/a/wis2/', '')
 
         if STORAGE_TYPE in ['S3', 'minio', 's3', 'MINIO', 'MinIO']:
             from wis2box_api.wis2box.minio import MinIOStorage
@@ -296,10 +296,7 @@ class DataHandler():
         LOGGER.debug(msg)
 
         try:
-            topic = self._channel
-            # if topic does not start with 'origin/a/wis2/' add it
-            if not topic.startswith('origin/a/wis2/'):
-                topic = f'origin/a/wis2/{topic}'
+            topic = f'origin/a/wis2/{self._channel}'
             LOGGER.info(f'Publishing to {topic} on {BROKER_PUBLIC}')
             # parse public broker url
             broker_public = urlparse(BROKER_PUBLIC)

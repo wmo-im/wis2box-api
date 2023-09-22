@@ -296,8 +296,8 @@ class DataHandler():
         LOGGER.debug(msg)
 
         try:
-            topic = f'origin/a/wis2/{self._channel}'
-            LOGGER.info(f'Publishing to {topic} on {BROKER_PUBLIC}')
+            wis2_topic = f'origin/a/wis2/{self._channel}'
+            LOGGER.info(f'Publishing to {wis2_topic} on {BROKER_PUBLIC}')
             # parse public broker url
             broker_public = urlparse(BROKER_PUBLIC)
             public_auth = {
@@ -311,7 +311,7 @@ class DataHandler():
                 else:
                     broker_port = 1883
             # publish notification on public broker
-            publish.single(topic=f'origin/a/wis2/{topic}',
+            publish.single(topic=wis2_topic,
                            payload=json.dumps(msg),
                            qos=1,
                            retain=False,

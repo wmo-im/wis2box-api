@@ -206,7 +206,7 @@ class DataHandler():
                             data_length=len(the_data),
                             content_type=DATA_OBJECT_MIMETYPES[fmt],
                             identifier=identifier,
-                            data_date_iso=data_date.isoformat(),
+                            data_date_iso=data_date.strftime('%Y-%m-%dT%H:%M:%SZ'), # noqa
                             geometry=item['_meta']['geometry'],
                             wsi=wsi)
                     except Exception as e:
@@ -269,7 +269,7 @@ class DataHandler():
                 'properties': {
                     'data_id': f'wis2/{self._channel}/{identifier}',
                     'datetime': data_date_iso,
-                    'pubtime': dt.now().isoformat(),
+                    'pubtime': dt.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                     'integrity': {
                         'method': checksum_type,
                         'value': checksum_value

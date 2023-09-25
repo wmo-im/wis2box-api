@@ -27,6 +27,7 @@ import logging
 from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
+from wis2box_api.wis2box.env import WIS2BOX_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        fc = self._load_stations(wigos_station_identifiers, topic)
+        fc = self._load_stations(wigos_station_identifiers, topic, collection_id) # noqa
         if None in fc['features']:
             msg = 'Invalid WIGOS station identifier provided'
             LOGGER.error(msg)
@@ -217,7 +218,7 @@ class StationInfoProcessor(BaseProcessor):
         return mimetype, outputs
 
     def _load_stations(self, wigos_station_identifiers: list = [],
-                       topic: str = ''):
+                       topic: str = '', collection_id: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
 
         # load stations from backend
@@ -239,11 +240,24 @@ class StationInfoProcessor(BaseProcessor):
                 fc['features'].append(hit['_source'])
         LOGGER.info(f"Found {len(fc['features'])} stations")
 
+        dm_link = {
+            "rel": "canonical",
+            "href": f"{WIS2BOX_API_URL}/collections/discovery-metadata/items/{collection_id}",  # noqa
+            "type": "application/json",
+            "title": collection_id  # noqa
+        }
+
         # filter by topic
         ff = []
         try:
             for f in fc['features']:
                 if topic.replace('origin/a/wis2/', '') in f['properties']['topics']:  # noqa
+                    f['properties']['topic'] = collection_id
+                    f['links'] = [dm_link]
+                    ff.append(f)
+                elif topic in f['properties']['topics']:
+                    f['properties']['topic'] = collection_id
+                    f['links'] = [dm_link]
                     ff.append(f)
             fc['features'] = ff
         except Exception as err:

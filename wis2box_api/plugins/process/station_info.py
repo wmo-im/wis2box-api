@@ -243,7 +243,7 @@ class StationInfoProcessor(BaseProcessor):
         ff = []
         try:
             for f in fc['features']:
-                if topic in f['properties']['topics']:
+                if topic.replace('origin/a/wis2/', '') in f['properties']['topics']:  # noqa
                     ff.append(f)
             fc['features'] = ff
         except Exception as err:

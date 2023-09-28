@@ -23,6 +23,7 @@ import os
 
 WIS2BOX_DOCKER_API_URL = os.environ.get('WIS2BOX_DOCKER_API_URL', 'http://wis2box-api:80/oapi') # noqa
 WIS2BOX_URL = os.environ.get('WIS2BOX_URL')
+WIS2BOX_API_URL = os.environ.get('WIS2BOX_API_URL')
 
 API_BACKEND_URL = os.environ.get('WIS2BOX_API_BACKEND_URL')
 

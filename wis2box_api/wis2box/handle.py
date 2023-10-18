@@ -267,7 +267,7 @@ class DataHandler():
                 'version': 'v04',
                 'geometry': geometry,
                 'properties': {
-                    'data_id': f'wis2/{self._channel}/{identifier}',
+                    'data_id': f'{self._channel}/{identifier}',
                     'datetime': data_date_iso,
                     'pubtime': dt.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                     'integrity': {

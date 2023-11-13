@@ -28,6 +28,8 @@ from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 from pygeoapi import l10n
 from pygeoapi.util import to_json, render_j2_template
 
+from pygeoapi.openapi import load_openapi_document
+
 from wis2box_api import __version__
 
 
@@ -49,7 +51,8 @@ class AsyncAPI(API):
         :returns: `wis2box_api.AsyncAPI` instance
         """
 
-        super().__init__(config)
+        openapi = load_openapi_document()
+        super().__init__(config, openapi)
 
     @pre_process
     def get_asyncapi(self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:  # noqa

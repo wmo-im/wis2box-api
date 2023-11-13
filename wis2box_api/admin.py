@@ -32,6 +32,8 @@ import yaml
 
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 
+from pygeoapi.openapi import load_openapi_document
+
 from pygeoapi.config import validate_config
 from pygeoapi.openapi import get_oas
 # from pygeoapi.openapi import validate_openapi_document
@@ -56,7 +58,8 @@ class Admin(API):
         :returns: `wis2box_api.Admin` instance
         """
 
-        super().__init__(config)
+        openapi = load_openapi_document()
+        super().__init__(config, openapi)
 
     def validate(self, config):
         """

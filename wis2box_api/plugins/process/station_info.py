@@ -95,7 +95,7 @@ PROCESS_DEF = {
     },
     'example': {
         'inputs': {
-            'collection': 'urn:x-wmo:md:dza:dza_met_centre:surface-weather-observations'  # noqa
+            'collection': 'urn:x-wmo:md:dz:dz_met_centre:surface-weather-observations'  # noqa
         }
     }
 }

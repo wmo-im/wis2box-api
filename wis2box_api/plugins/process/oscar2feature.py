@@ -170,7 +170,7 @@ class Oscar2FeatureProcessor(BaseProcessor):
             },
             'properties': {
                 'name': station.get('station_name', ''),
-                'wigos_station_identifier': station.get('wigos_station_identifier', ''), # noqa
+                'wigos_station_identifier': wsi,
                 'traditional_station_identifier': tsi,
                 'facility_type': station.get('facility_type', ''),
                 'territory_name': territory_name,

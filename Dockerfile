@@ -32,6 +32,7 @@ COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 
 RUN cd /app \
     && pip3 install -e . \
+    && pip3 install https://github.com/wmo-im/pywis-topics/archive/main.zip \
     && pip3 install https://github.com/wmo-im/pywcmp/archive/master.zip \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
 

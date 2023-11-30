@@ -23,9 +23,10 @@ import logging
 import requests
 import base64
 
-from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL
 from pygeoapi.process.base import BaseProcessor
 from bufr2geojson import transform as as_geojson
+
+from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,7 +114,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                 data_url = data_url.replace(STORAGE_PUBLIC_URL, 'http://minio:9000/wis2box-public')  # noqa
                 LOGGER.debug(f'Executing bufr2geojson on: {data_url}')
                 # read the data from the URL
-                result = requests.get(data_url)  # noqa
+                result = requests.get(data_url)
                 # raise an exception if the status code is not 200
                 result.raise_for_status()
                 # get the bytes from the response

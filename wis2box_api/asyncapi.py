@@ -24,6 +24,8 @@ import logging
 from typing import Any, Tuple, Union
 from urllib.parse import urlparse
 
+from pygeoapi.openapi import load_openapi_document
+
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
 from pygeoapi import l10n
 from pygeoapi.util import to_json, render_j2_template

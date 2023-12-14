@@ -184,7 +184,7 @@ class DataHandler():
                     yyyymmdd = data_date.strftime('%Y-%m-%d')
                     storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
                     storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
-                    
+
                     is_update = False
                     is_new = True
                     # check if storage_path already exists
@@ -194,8 +194,8 @@ class DataHandler():
                             is_new = False
                         else:
                             is_update = True
-                    
-                    if is_new == False and is_update == False:
+
+                    if not is_new and not is_update:
                         message = f'Data exists for {storage_path} and no change detected; not publishing'  # noqa
                         LOGGER.error(message)
                         errors.append(message)

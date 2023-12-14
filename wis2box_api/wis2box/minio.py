@@ -71,11 +71,11 @@ class MinIOStorage(Storage):
             raise err
 
     def get(self, identifier: str) -> Any:
-        LOGGER.debug(f'Getting object {identifier} from bucket={self.name}') # noqa
+        LOGGER.debug(f'Getting object {identifier} from bucket={self.name}')
         # Get data of an object.
         try:
-            response = self.client.get_object(bucket_name=self.name,
-                object_name=identifier)
+            response = self.client.get_object(
+                bucket_name=self.name, object_name=identifier)
             data = response.data
             response.close()
             response.release_conn()

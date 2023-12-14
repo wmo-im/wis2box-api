@@ -184,6 +184,32 @@ class DataHandler():
                     yyyymmdd = data_date.strftime('%Y-%m-%d')
                     storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
                     storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
+                    
+                    is_update = False
+                    is_new = True
+                    # check if storage_path already exists
+                    if self._storage.exists(storage_path):
+                        # if data exists, check if it is the same
+                        if the_data == self._storage.get(storage_path):
+                            is_new = False
+                        else:
+                            is_update = True
+                    
+                    if is_new == False and is_update == False:
+                        message = f'Data exists for {storage_path} and no change detected; not publishing'  # noqa
+                        LOGGER.error(message)
+                        errors.append(message)
+                        data.append(
+                            {
+                                'file_url': storage_url,
+                                'filename': filename
+                            })
+                        continue
+                    if is_update:
+                        message = f'Data exists for {storage_path} and change detected; updating'  # noqa
+                        LOGGER.warning(message)
+                        warnings.append(message)
+
                     try:
                         self._storage.put(data=the_data, identifier=storage_path) # noqa
                         data.append(

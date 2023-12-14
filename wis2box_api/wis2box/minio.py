@@ -22,6 +22,7 @@
 import logging
 
 from minio import Minio
+from minio import error as minio_error
 
 from io import BytesIO
 
@@ -52,13 +53,29 @@ class MinIOStorage(Storage):
                             secret_key=self.password,
                             secure=is_secure)
 
-    def get(self, identifier: str) -> Any:
+    def exists(self, identifier: str) -> bool:
+        LOGGER.debug(f'Checking if object {identifier} exists')
+        try:
+            # Attempt to get object info to check if it exists
+            self.client.stat_object(bucket_name=self.name, object_name=identifier) # noqa
+            return True  # Object exists
+        except minio_error.S3Error as err:
+            if err.code == 'NoSuchKey':
+                LOGGER.debug(err)
+                return False
+            else:
+                LOGGER.error(err)
+                raise err
+        except Exception as err:
+            LOGGER.error(err)
+            raise err
 
+    def get(self, identifier: str) -> Any:
         LOGGER.debug(f'Getting object {identifier} from bucket={self.name}') # noqa
         # Get data of an object.
         try:
-            response = self.client.get_object(
-                self.name, object_name={identifier})
+            response = self.client.get_object(bucket_name=self.name,
+                object_name=identifier)
             data = response.data
             response.close()
             response.release_conn()

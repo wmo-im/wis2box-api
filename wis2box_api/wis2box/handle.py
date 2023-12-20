@@ -141,10 +141,24 @@ class DataHandler():
                     continue
 
                 filename = f'{identifier}.{fmt}'
+                data.append(
+                    {
+                        'data': base64.b64encode(the_data).decode(),
+                        'filename': filename
+                    })
                 if self._notify:
-                    # notify wis2box-management by sending DataNotificationRequest
-                    self.send_data_notification_request(the_data,filename)
-                    # TODO check if the notification was successful
+                    yyyymmdd = data_date.strftime('%Y-%m-%d')
+                    storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}' # noqa
+                    # notify wis2box-management: send DataNotificationRequest
+                    result = self.send_data_notification_request(
+                        the_data,
+                        storage_path,
+                        _meta=item['_meta']) # noqa
+                    if result != 'success':
+                        errors.append(f'{result}')
+                    else:
+                        # TODO check if the notification was successful
+                        data_published += 1
 
         if data_converted > 0 and errors == [] and warnings == []:
             result = 'success'
@@ -164,28 +178,29 @@ class DataHandler():
 
         return mimetype, outputs
 
-    def send_data_notification_request(self, data, filename):
-        """Send DataNotificationRequest	
+    def send_data_notification_request(self, data, storage_path, _meta=None):
+        """Send DataNotificationRequest
 
         :param data: data to publish
-        :param filename: filename of the data
+        :param storage_path: storage path for the data
 
         :returns: 'success' or error message
         """
-        
+
         try:
             base64_encoded_data = base64.b64encode(data).decode()
         except Exception as e:
             return f'Error encoding data: {e}'
-        
-        msg = {
-            'EventName': 'DataNotificationRequest',
-            'filename': filename,
-            'base64_encoded_data': base64_encoded_data,
-            'channel': self._channel,
-        }
 
         try:
+            # create the message
+            msg = {
+                'EventName': 'DataNotificationRequest',
+                'storage_path': storage_path,
+                'base64_encoded_data': base64_encoded_data,
+                'channel': self._channel,
+                '_meta': _meta
+            }
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,

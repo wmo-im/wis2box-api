@@ -22,26 +22,15 @@
 import base64
 import json
 import logging
-import hashlib
-import uuid
 
 import paho.mqtt.publish as publish
 
-from urllib.parse import urlparse
-
-from datetime import datetime as dt
-
 from enum import Enum
 
-from wis2box_api.wis2box.env import BROKER_PUBLIC
 from wis2box_api.wis2box.env import BROKER_HOST
 from wis2box_api.wis2box.env import BROKER_PORT
 from wis2box_api.wis2box.env import BROKER_USERNAME
 from wis2box_api.wis2box.env import BROKER_PASSWORD
-
-from wis2box_api.wis2box.env import STORAGE_TYPE
-from wis2box_api.wis2box.env import STORAGE_PUBLIC
-from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,24 +75,6 @@ class DataHandler():
 
         self._notify = notify
         self._channel = channel.replace('origin/a/wis2/', '')
-
-        if STORAGE_TYPE in ['S3', 'minio', 's3', 'MINIO', 'MinIO']:
-            from wis2box_api.wis2box.minio import MinIOStorage
-            self._storage = MinIOStorage(name=STORAGE_PUBLIC)
-        else:
-            LOGGER.error(f'Unknown storage type: {STORAGE_TYPE}')
-            raise Exception(f'Unknown storage type: {STORAGE_TYPE}')
-
-    def _generate_checksum(self, bytes, algorithm: SecureHashAlgorithms) -> str:  # noqa
-        """
-        Generate a checksum of message file
-        :param algorithm: secure hash algorithm (md5, sha512)
-        :returns: `tuple` of hexdigest and length
-        """
-
-        sh = getattr(hashlib, algorithm)()
-        sh.update(bytes)
-        return base64.b64encode(sh.digest()).decode()
 
     def process_items(self, output_items: []):
         """Process output_items, store and publish them
@@ -170,79 +141,10 @@ class DataHandler():
                     continue
 
                 filename = f'{identifier}.{fmt}'
-                if not self._notify:
-                    try:
-                        data.append(
-                            {
-                                'data': base64.b64encode(the_data).decode(),
-                                'filename': filename
-                            })
-                    except Exception as e:
-                        LOGGER.error(e)
-                        return handle_error(e)
-                else:
-                    yyyymmdd = data_date.strftime('%Y-%m-%d')
-                    storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}'  # noqa   
-                    storage_url = f'{STORAGE_PUBLIC_URL}/{storage_path}'
-
-                    is_update = False
-                    is_new = True
-                    # check if storage_path already exists
-                    if self._storage.exists(storage_path):
-                        # if data exists, check if it is the same
-                        if the_data == self._storage.get(storage_path):
-                            is_new = False
-                        else:
-                            is_update = True
-
-                    if not is_new and not is_update:
-                        message = f'Data exists for {storage_path} and no change detected; not publishing'  # noqa
-                        LOGGER.error(message)
-                        errors.append(message)
-                        data.append(
-                            {
-                                'file_url': storage_url,
-                                'filename': filename
-                            })
-                        continue
-                    if is_update:
-                        message = f'Data exists for {storage_path} and change detected; updating'  # noqa
-                        LOGGER.warning(message)
-                        warnings.append(message)
-
-                    try:
-                        self._storage.put(data=the_data, identifier=storage_path) # noqa
-                        data.append(
-                            {
-                                'file_url': storage_url,
-                                'filename': filename
-                            })
-                    except Exception as e:
-                        LOGGER.error(e)
-                        return handle_error(e)
-
-                    notify_result = 'unknown'
-                    try:
-                        checksum_type = SecureHashAlgorithms.SHA512.value
-                        checksum_value = self._generate_checksum(the_data, checksum_type) # noqa
-                        notify_result = self._publish_wis2_message(
-                            storage_url=storage_url,
-                            checksum_type=checksum_type,
-                            checksum_value=checksum_value,
-                            data_length=len(the_data),
-                            content_type=DATA_OBJECT_MIMETYPES[fmt],
-                            identifier=identifier,
-                            data_date_iso=data_date.strftime('%Y-%m-%dT%H:%M:%SZ'), # noqa
-                            geometry=item['_meta']['geometry'],
-                            wsi=wsi,
-                            is_update=is_update)
-                    except Exception as e:
-                        LOGGER.error(e)
-                        errors.append(f'error hashing: {e}')
-                    if notify_result == 'success':
-                        data_published += 1
-                    else:
-                        errors.append(f'error publishing WIS2-notification: {notify_result}') # noqa
+                if self._notify:
+                    # notify wis2box-management by sending DataNotificationRequest
+                    self.send_data_notification_request(the_data,filename)
+                    # TODO check if the notification was successful
 
         if data_converted > 0 and errors == [] and warnings == []:
             result = 'success'
@@ -262,113 +164,41 @@ class DataHandler():
 
         return mimetype, outputs
 
-    def _publish_wis2_message(self,
-                              storage_url: str,
-                              checksum_type: str,
-                              checksum_value: str,
-                              data_length: int,
-                              content_type: str,
-                              identifier: str,
-                              data_date_iso: str,
-                              geometry: dict,
-                              wsi: str = None,
-                              is_update: bool = False) -> str:
-        """Publish a WIS2 message
+    def send_data_notification_request(self, data, filename):
+        """Send DataNotificationRequest	
 
-        :param storage_url: url to the stored file
-        :param checksum_type: type of the checksum
-        :param checksum_value: value of the checksum
-        :param data_length: length of the file
-        :param content_type: content type of the file
-        :param identifier: identifier of the file
-        :param data_date_iso: date of the file in iso-format
-        :param geometry: geometry of the file
-        :param wsi: wigos station identifier
+        :param data: data to publish
+        :param filename: filename of the data
 
-        :returns: status of the publish
+        :returns: 'success' or error message
         """
-
+        
         try:
-            msg = {
-                'id': str(uuid.uuid4()),
-                'type': 'Feature',
-                'version': 'v04',
-                'geometry': geometry,
-                'properties': {
-                    'data_id': f'{self._channel}/{identifier}',
-                    'datetime': data_date_iso,
-                    'pubtime': dt.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    'integrity': {
-                        'method': checksum_type,
-                        'value': checksum_value
-                    },
-                    'wigos_station_identifier': wsi
-                },
-                'links': [
-                    {
-                        'rel': 'canonical',
-                        'type': content_type,
-                        'href': storage_url,
-                        'length': data_length
-                    },
-                    {
-                        'rel': 'via',
-                        'type': 'text/html',
-                        'href': f'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/{wsi}' # noqa
-                    }
-                ]
-            }
-            if is_update:
-                msg['links'].append(
-                    {
-                        'rel': 'http://def.wmo.int/def/rel/wnm/-/update',
-                        'type': content_type,
-                        'href': storage_url,
-                        'length': data_length
-                    }
-                )
+            base64_encoded_data = base64.b64encode(data).decode()
         except Exception as e:
-            LOGGER.error(e)
-            return f'Error creating message: {e}'
-        LOGGER.debug(msg)
+            return f'Error encoding data: {e}'
+        
+        msg = {
+            'EventName': 'DataNotificationRequest',
+            'filename': filename,
+            'base64_encoded_data': base64_encoded_data,
+            'channel': self._channel,
+        }
 
         try:
-            wis2_topic = f'origin/a/wis2/{self._channel}'
-            LOGGER.info(f'Publishing to {wis2_topic} on {BROKER_PUBLIC}')
-            # parse public broker url
-            broker_public = urlparse(BROKER_PUBLIC)
-            public_auth = {
-                'username': broker_public.username,
-                'password': broker_public.password
-            }
-            broker_port = broker_public.port
-            if broker_port is None:
-                if broker_public.scheme == 'mqtts':
-                    broker_port = 8883
-                else:
-                    broker_port = 1883
-            # publish notification on public broker
-            publish.single(topic=wis2_topic,
-                           payload=json.dumps(msg),
-                           qos=1,
-                           retain=False,
-                           hostname=broker_public.hostname,
-                           port=broker_port,
-                           auth=public_auth)
-
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,
                 'password': BROKER_PASSWORD
             }
-            publish.single(topic='wis2box/notifications',
+            publish.single(topic='wis2box/requests',
                            payload=json.dumps(msg),
                            qos=1,
                            retain=False,
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug('Message successfully published')
+            LOGGER.debug('DataNotificationRequest published')
         except Exception as e:
             return f'Error publishing message: {e}'
 

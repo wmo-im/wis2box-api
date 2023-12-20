@@ -234,7 +234,8 @@ class DataHandler():
                             identifier=identifier,
                             data_date_iso=data_date.strftime('%Y-%m-%dT%H:%M:%SZ'), # noqa
                             geometry=item['_meta']['geometry'],
-                            wsi=wsi)
+                            wsi=wsi,
+                            is_update=is_update)
                     except Exception as e:
                         LOGGER.error(e)
                         errors.append(f'error hashing: {e}')
@@ -270,7 +271,8 @@ class DataHandler():
                               identifier: str,
                               data_date_iso: str,
                               geometry: dict,
-                              wsi: str = None) -> str:
+                              wsi: str = None,
+                              is_update: bool = False) -> str:
         """Publish a WIS2 message
 
         :param storage_url: url to the stored file
@@ -316,6 +318,15 @@ class DataHandler():
                     }
                 ]
             }
+            if is_update:
+                msg['links'].append(
+                    {
+                        'rel': 'http://def.wmo.int/def/rel/wnm/-/update',
+                        'type': content_type,
+                        'href': storage_url,
+                        'length': data_length
+                    }
+                )
         except Exception as e:
             LOGGER.error(e)
             return f'Error creating message: {e}'

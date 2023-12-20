@@ -24,7 +24,7 @@ expected_response = {
   "messages published": 1,
   "data_items": [
     {
-      "file_url": "http://localhost/data/2023-01-19/wis/synop/test/WIGOS_0-20000-0-64400_20230119T060000.bufr4", # noqa
+      "data": "QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3", # noqa
       "filename": "WIGOS_0-20000-0-64400_20230119T060000.bufr4"
     }
   ],

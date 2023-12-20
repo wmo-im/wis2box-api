@@ -20,6 +20,7 @@
 ###############################################################################
 
 import base64
+import datetime
 import json
 import logging
 
@@ -193,6 +194,12 @@ class DataHandler():
             return f'Error encoding data: {e}'
 
         try:
+            # Convert datetime objects to strings
+            if _meta is not None:
+                for key, value in _meta.items():
+                    if isinstance(value, datetime.datetime):
+                        _meta[key] = value.isoformat()
+            
             # create the message
             msg = {
                 'EventName': 'DataNotificationRequest',

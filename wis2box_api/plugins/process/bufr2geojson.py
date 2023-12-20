@@ -26,7 +26,7 @@ import base64
 from pygeoapi.process.base import BaseProcessor
 from bufr2geojson import transform as as_geojson
 
-from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL
+from wis2box_api.wis2box.env import STORAGE_PUBLIC_URL, STORAGE_SOURCE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -109,9 +109,9 @@ class Bufr2geojsonProcessor(BaseProcessor):
             if 'data_url' in data:
                 data_url = data['data_url']
                 # replace the public URL with the internal minio URL
-                LOGGER.debug('Replacing STORAGE_PUBLIC_URL with internal minio URL')  # noqa
-                # data is stored in the wis2box-public bucket at http://minio:9000/wis2box-public  # noqa
-                data_url = data_url.replace(STORAGE_PUBLIC_URL, 'http://minio:9000/wis2box-public')  # noqa
+                LOGGER.debug('Replacing STORAGE_PUBLIC_URL with internal storage URL')  # noqa
+                # replace the public URL with the internal storage URL
+                data_url = data_url.replace(STORAGE_PUBLIC_URL, f'{STORAGE_SOURCE}/wis2box-public')  # noqa
                 LOGGER.debug(f'Executing bufr2geojson on: {data_url}')
                 # read the data from the URL
                 result = requests.get(data_url)

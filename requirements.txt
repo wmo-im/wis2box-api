@@ -5,6 +5,5 @@ flask-cors
 gevent==21.8.0
 iso3166
 json-merge-patch
-minio
 paho-mqtt
 pygeometa

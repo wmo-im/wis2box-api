@@ -20,7 +20,6 @@
 ###############################################################################
 
 import base64
-import datetime
 import json
 import logging
 
@@ -142,19 +141,22 @@ class DataHandler():
                     continue
 
                 filename = f'{identifier}.{fmt}'
+                meta = {
+                        'id': identifier,
+                        'wigos_station_identifier': wsi,
+                        'data_date': data_date.isoformat(),
+                        'geometry': item['_meta']['geometry'],
+                }
                 data.append(
                     {
                         'data': base64.b64encode(the_data).decode(),
-                        'filename': filename
+                        'filename': filename,
+                        'meta': meta,
+                        'channel': self._channel
                     })
                 if self._notify:
-                    yyyymmdd = data_date.strftime('%Y-%m-%d')
-                    storage_path = f'{yyyymmdd}/wis/{self._channel}/{identifier}.{fmt}' # noqa
-                    # notify wis2box-management: send DataNotificationRequest
-                    result = self.send_data_notification_request(
-                        the_data,
-                        storage_path,
-                        _meta=item['_meta']) # noqa
+                    # send the last entry in the data list as a notification
+                    result = self.send_data_publish_request(data[-1])
                     if result != 'success':
                         errors.append(f'{result}')
                     else:
@@ -179,35 +181,18 @@ class DataHandler():
 
         return mimetype, outputs
 
-    def send_data_notification_request(self, data, storage_path, _meta=None):
-        """Send DataNotificationRequest
+    def send_data_publish_request(self, data_item: dict):
+        """Send DataPublishRequest
 
-        :param data: data to publish
-        :param storage_path: storage path for the data
+        :param data: data_item
 
         :returns: 'success' or error message
         """
 
         try:
-            base64_encoded_data = base64.b64encode(data).decode()
-        except Exception as e:
-            return f'Error encoding data: {e}'
-
-        try:
-            # Convert datetime objects to strings
-            if _meta is not None:
-                for key, value in _meta.items():
-                    if isinstance(value, datetime.datetime):
-                        _meta[key] = value.isoformat()
-            
-            # create the message
-            msg = {
-                'EventName': 'DataNotificationRequest',
-                'storage_path': storage_path,
-                'base64_encoded_data': base64_encoded_data,
-                'channel': self._channel,
-                '_meta': _meta
-            }
+            # create the message out of the data_item
+            msg = data_item
+            msg['EventName'] = 'DataPublishRequest'
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,
@@ -220,8 +205,8 @@ class DataHandler():
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug('DataNotificationRequest published')
+            LOGGER.debug('DataPublishRequest published')
         except Exception as e:
-            return f'Error publishing message: {e}'
+            return f'Error publishing message: msg={msg}, error={e}'
 
         return 'success'

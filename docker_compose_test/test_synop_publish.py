@@ -19,17 +19,28 @@ data = {
 }
 
 expected_response = {
-  "result": "success",
-  "messages transformed": 1,
-  "messages published": 1,
-  "data_items": [
-    {
-      "data": "QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3", # noqa
-      "filename": "WIGOS_0-20000-0-64400_20230119T060000.bufr4"
-    }
-  ],
-  "errors": [],
-  "warnings": []
+    'result': 'success',
+    'messages transformed': 1,
+    'messages published': 1,
+    'data_items': [
+        {
+            'data': 'QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3', # noqa
+            'filename': 'WIGOS_0-20000-0-64400_20230119T060000.bufr4',
+            'meta': {
+                'id': 'WIGOS_0-20000-0-64400_20230119T060000',
+                'wigos_station_identifier': '0-20000-0-64400',
+                'data_date': '2023-01-19T06:00:00',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [11.8817, -4.8045]
+                  }
+              },
+            'channel': 'synop/test',
+            'EventName': 'DataPublishRequest'
+        }
+      ],
+    'errors': [],
+    'warnings': []
 }
 
 response = requests.post(url, headers=headers, json=data)

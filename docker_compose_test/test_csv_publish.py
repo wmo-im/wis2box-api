@@ -24,7 +24,17 @@ expected_response = {
   "data_items": [
     {
       "data": "QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5gMfAAAAAAALAAABgMGWx2AAAVMABOIAAAMTUwMTUAAAAAAAAAAAAAAB4H//////////////////////////+vzG+ABpHZUm5gfCNGEap///////////////////////////+du////////+CZAB9P/3R3cw+h////////////////////////////////////////////////8wiAAX//////////Af////gP////////////////////////////////////+AyP//////////////////////////+J/YPAPff2DwGT4goBadMCgN3//////////////////////////////////////////A+j/f/AMH/QDZ/oBQf0AYH6AHP////////////////////////////////////////////////////////////////////////////////////8A3Nzc3", # noqa
-      "filename": "WIGOS_0-20000-0-15015_20220331T000000.bufr4"
+      "filename": "WIGOS_0-20000-0-15015_20220331T000000.bufr4",
+      'meta': {
+         'id': 'WIGOS_0-20000-0-15015_20220331T000000',
+         'wigos_station_identifier': '0-20000-0-15015',
+         'data_date': '2022-03-31T00:00:00',
+         'geometry': {
+            'type': 'Point',
+            'coordinates': [23.94046026, 47.77706163]
+          }
+        },
+      'channel': 'csv/test'
     }
   ],
   "errors": [],

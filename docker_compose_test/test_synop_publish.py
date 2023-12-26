@@ -35,8 +35,7 @@ expected_response = {
                     'coordinates': [11.8817, -4.8045]
                   }
               },
-            'channel': 'synop/test',
-            'EventName': 'DataPublishRequest'
+            'channel': 'synop/test'
         }
       ],
     'errors': [],

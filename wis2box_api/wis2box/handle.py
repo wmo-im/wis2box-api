@@ -191,8 +191,13 @@ class DataHandler():
 
         try:
             # create the message out of the data_item
-            msg = data_item
-            msg['EventName'] = 'DataPublishRequest'
+            msg = {
+                'EventName': 'DataPublishRequest',
+                'channel': data_item['channel'],
+                'data': data_item['data'],
+                'filename': data_item['filename'],
+                'meta': data_item['meta']
+            }
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,

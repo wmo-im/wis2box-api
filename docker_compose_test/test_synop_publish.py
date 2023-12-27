@@ -1,5 +1,8 @@
+import json
 import requests
 import sys
+
+import paho.mqtt.client as mqtt
 
 url = 'http://localhost:4343/oapi/processes/wis2box-synop2bufr/execution'
 
@@ -42,6 +45,70 @@ expected_response = {
     'warnings': []
 }
 
+
+def validate_message(message, expected_response):
+    """Validate the received message against the expected message
+
+    :param message: received message
+    :param expected_message: expected message
+    """
+    print(f"Received message on topic: {message.topic}")
+    # decode message payload as json
+    message = json.loads(message.payload.decode())
+    # create the expected message
+    expected_message = {
+        'EventName': 'DataPublishRequest',
+        'channel': expected_response['data_items'][0]['channel'],
+        'filename': expected_response['data_items'][0]['filename'],
+        'data': expected_response['data_items'][0]['data'],
+        'meta': expected_response['data_items'][0]['meta']
+    }
+    # compare the received message with the expected message
+    is_equal = True
+    if message['EventName'] != expected_message['EventName']:
+        print(f"Expected EventName: {expected_message['EventName']}")
+        print(f"Received EventName: {message['EventName']}")
+        is_equal = False
+    if message['channel'] != expected_message['channel']:
+        print(f"Expected channel: {expected_message['channel']}")
+        print(f"Received channel: {message['channel']}")
+        is_equal = False
+    if message['filename'] != expected_message['filename']:
+        print(f"Expected filename: {expected_message['filename']}")
+        print(f"Received filename: {message['filename']}")
+        is_equal = False
+    if message['data'] != expected_message['data']:
+        print(f"Expected data: {expected_message['data']}")
+        print(f"Received data: {message['data']}")
+        is_equal = False
+    if message['meta'] != expected_message['meta']:
+        print(f"Expected meta: {expected_message['meta']}")
+        print(f"Received meta: {message['meta']}")
+        is_equal = False
+    if is_equal is False:
+        print("Received message doesn't match the expected message.")
+        sys.exit(1)
+    else:
+        print("Received message matches the expected message.")
+
+
+# start mqtt client
+client = mqtt.Client()
+
+# user credentials wis2box:wis2box
+client.username_pw_set('wis2box', 'wis2box')
+# connect to the broker
+client.connect('localhost', 5883, 60)
+
+# subscribe to the topic
+client.subscribe('wis2box/#')
+
+# define callback function for received messages
+client.on_message = lambda client, userdata, message: validate_message(message, expected_response) # noqa
+
+# start the loop
+client.loop_start()
+
 response = requests.post(url, headers=headers, json=data)
 
 if response.status_code == 200 and response.json() == expected_response:
@@ -51,3 +118,6 @@ else:
     print(f"Status code: {response.status_code}")
     print(f"Response:\n {response.json()}")
     sys.exit(1)
+
+# stop the loop
+client.loop_stop()

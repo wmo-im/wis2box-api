@@ -68,9 +68,11 @@ services:
   mosquitto:
     container_name: wis2box-api-test-mosquitto
     restart: always
-    image: ghcr.io/wmo-im/wis2box-broker:1.0b4
+    image: ghcr.io/wmo-im/wis2box-broker:latest
     env_file:
       - test.env
+    ports:
+      - "5883:1883"
 
   elasticsearch:
     container_name: wis2box-api-test-elasticsearch

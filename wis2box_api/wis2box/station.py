@@ -63,9 +63,8 @@ class Stations():
         if wsi in self.stations:
             return wsi
         elif tsi is not None:
-            for station in self.stations:
-                # check if the tsi is contain in the string
-                if tsi in station['properties']['wigos_station_identifier']:
+            for station in self.stations.values():
+                if station['properties']['traditional_station_identifier'] == tsi: # noqa
                     return station['properties']['wigos_station_identifier']
         return None
 

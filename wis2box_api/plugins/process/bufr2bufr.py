@@ -130,10 +130,14 @@ class BufrPublishProcessor(BaseProcessor):
             input_bytes = base64.b64decode(encoded_data_bytes)
             obs_bufr = ObservationDataBUFR(input_bytes)
             LOGGER.info(f'Size of input_bytes: {len(input_bytes)}')
-            output_items = obs_bufr.process_data()
-            for output_item in output_items:
-                LOGGER.info(f'Output item: {output_item}')
         except Exception as err:
             return handle_error(f'bufr2bufr raised Exception: {err}') # noqa
+
+        try:
+            output_items = obs_bufr.process_data()
+        except Exception as err:
+            msg = f'ObservationDataBUFR.process_data raised Exception: {err}'
+            LOGGER.error(msg)
+            return handle_error(msg)
 
         return data_handler.process_items(output_items)

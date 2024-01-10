@@ -141,11 +141,16 @@ class DataHandler():
                     continue
 
                 filename = f'{identifier}.{fmt}'
+                geometry = None
+                if 'geometry' in item['_meta']:
+                    geometry = item['_meta']['geometry']
+                elif 'geometry' in item['_meta']['properties']:
+                    geometry = item['_meta']['properties']['geometry']
                 meta = {
                         'id': identifier,
                         'wigos_station_identifier': wsi,
                         'data_date': data_date.isoformat(),
-                        'geometry': item['_meta']['geometry'],
+                        'geometry': geometry,
                 }
                 data.append(
                     {

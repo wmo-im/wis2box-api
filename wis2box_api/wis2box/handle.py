@@ -197,7 +197,7 @@ class DataHandler():
         try:
             # create the message out of the data_item
             msg = {
-                'EventName': 'DataPublishRequest',
+                'EventName': 'wis2box:DataPublishRequest',
                 'channel': data_item['channel'],
                 'data': data_item['data'],
                 'filename': data_item['filename'],

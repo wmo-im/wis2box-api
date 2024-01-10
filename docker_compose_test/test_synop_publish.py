@@ -57,7 +57,7 @@ def validate_message(message, expected_response):
     message = json.loads(message.payload.decode())
     # create the expected message
     expected_message = {
-        'EventName': 'DataPublishRequest',
+        'EventName': 'wis2box:DataPublishRequest',
         'channel': expected_response['data_items'][0]['channel'],
         'filename': expected_response['data_items'][0]['filename'],
         'data': expected_response['data_items'][0]['data'],

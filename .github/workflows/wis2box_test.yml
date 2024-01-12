@@ -1,4 +1,4 @@
-name: docker-compose-test
+name: test-with-wis2box
 
 on: [ push, pull_request ]
 
@@ -25,7 +25,7 @@ jobs:
           docker-compose up -d  --build
 
       - name: Wait for service to be ready
-        run: sleep 45
+        run: sleep 5
 
       - name: publish stations
         working-directory: docker_compose_test
@@ -41,15 +41,10 @@ jobs:
             exit 1
           fi
 
-      - name: test synop publish
-        working-directory: docker_compose_test
+      - name: run integration tests ⚙️
+        working-directory: docker_compose_test 
         run: |
-          python3 test_synop_publish.py
-
-      - name: test csv publish
-        working-directory: docker_compose_test
-        run: |
-          python3 test_csv_publish.py
+          pytest -s tests/integration
 
       - name: failed tests 🚩
         working-directory: docker_compose_test

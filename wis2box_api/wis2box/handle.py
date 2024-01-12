@@ -56,6 +56,9 @@ def handle_error(error):
     errors.append(f'{error}')
     outputs = {
         'result': 'failure',
+        'messages transformed': 0,
+        'messages published': 0,
+        'data_items': [],
         'errors': errors,
         'warnings': []
     }

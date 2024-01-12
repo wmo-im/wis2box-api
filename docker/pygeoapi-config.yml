@@ -14,6 +14,10 @@ server:
         attribution: ${WIS2BOX_BASEMAP_ATTRIBUTION}
     templates:
         path: /pygeoapi/pygeoapi/templates
+    manager:
+        name: TinyDB
+        connection: /tmp/pygeoapi-process-manager.db
+        output_dir: /tmp/
 
 logging:
     level: ${WIS2BOX_LOGGING_LOGLEVEL}

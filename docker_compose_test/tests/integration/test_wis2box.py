@@ -51,7 +51,9 @@ def store_message(message, channel):
         print(f'channel {message["channel"]} does not match {channel}')
 
 
-def transform_to_bufr(process_name: str, data: str, expected_response: dict):
+def transform_to_bufr(process_name: str,
+                      data: str,
+                      expected_response: dict):
     """Transform data to bufr
 
     :param process_name: name of the process
@@ -64,23 +66,35 @@ def transform_to_bufr(process_name: str, data: str, expected_response: dict):
 
     headers = {
         'accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
     }
-
+    headers['Prefer'] = 'respond-async'
     response = requests.post(url, headers=headers, json=data)
-
-    assert response.status_code == 200
-
+    headers_json = dict(response.headers)
+    assert response.status_code == 201, f'Aysnc response status code: {response.status_code}' # noqa
+    # print(headers_json)
+    if 'Location' not in headers_json:
+        assert False, f'Location not in headers: {headers_json}'
+    # get the job_location_url from the response
+    job_location_url = headers_json['Location']
+    # print(job_location_url)
+    status = "accepted"
+    while status == "accepted" or status == "running":
+        # get the job status
+        response = requests.get(job_location_url, headers=headers)
+        response_json = response.json()
+        status = response_json['status']
+        time.sleep(0.1)
+    assert status == "successful"
+    # get result from job_location_url/results?f=json
+    response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
     response_json = response.json()
-
-    # assert response_json['result'] == expected_response['result']
+    # print(response_json)
+    assert response_json['result'] == expected_response['result']
     assert response_json['messages transformed'] == expected_response['messages transformed'] # noqa
     assert response_json['messages published'] == expected_response['messages published'] # noqa
     assert response_json['errors'] == expected_response['errors']
-    # assert response_json['warnings'] == expected_response['warnings']
-
-    # wait for the message to be received
-    time.sleep(1)
+    assert response_json['warnings'] == expected_response['warnings']
 
     filename = data['inputs']['channel'].replace('/', '_') + '.json'
 
@@ -215,6 +229,61 @@ def test_csv2bufr():
     client.subscribe('wis2box/#')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel='csv/test') # noqa
+    # start the loop
+    client.loop_start()
+    # transform bufr message
+    transform_to_bufr(process_name, data, expected_response)
+    # stop the loop
+    client.loop_stop()
+    # disconnect from the broker
+    client.disconnect()
+
+
+def test_bufr2bufr():
+    """Test bufr2bufr"""
+
+    process_name = 'wis2box-bufr2bufr'
+    data = {
+        'inputs': {
+            'data': 'SVNNRDAyIExJSUIgMjEwMDAwIFJSQQ0NCkJVRlIAAOwEAAAWAABQAAAAAAACABAAB+YDFQAAAAAACQAAAYDHVgAAwQAgrCanpyoiqaGqqSeQEBAQEBAQEBAQL8xqgAYqvgJXWq5Q0iiRQXP/+98PuhNAUBAGQ0X7QO2ADIH0AGQAA//+mHMFz6hQCCZALgH9BxQD////////////////////////////////////8OP9HI/+AB+gAABkP9AAP///+AZD9EADVev0QANFqB9GCf2JoGf39v//+6YCATv//////3/////////4AAAAf//////7/6P////8P/wCye///8A3Nzc3DQ0K', # noqa
+            'channel': 'bufr/test',
+            'notify': True
+        },
+    }
+    expected_response = {
+        'result': 'success',
+        'messages transformed': 1,
+        'messages published': 1,
+        'data_items': [
+            {
+                'data': 'QlVGUgABAgQAABYAAFAAAAAAAAIAHAAH5gMVAAAAAAALAAABgMGWx1YAANUABOIAAAMTYzNDQAAAAAAAAAAAAAACCsJqenKiKpoaqpJ4AAAAAAAAAAAAAvzGqABiq+AldarlDSKJFBc//73w+6E0BQEAZDRftA7YAMgfQAZAAD//6YcwXPqFAIJkAuAf0HFAP////////////////////////////////////w4/0cj/4AH6AAAGQ/0AA////4BkP0QANV6/RAA0WoH0YJ/YmgZ/f2///7pgIBO///////f/////////gAAAB///////v/o/////w//ALJ7///w3Nzc3', # noqa
+                'filename': 'WIGOS_0-20000-0-16344_20220321T000000.bufr4',
+                'meta': {
+                    'id': 'WIGOS_0-20000-0-16344_20220321T000000',
+                    'wigos_station_identifier': '0-20000-0-16344',
+                    'data_date': '2022-03-21T00:00:00',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': [16.39639, 39.33056, 1669.0]
+                    }
+                },
+                'channel': 'bufr/test'
+            }
+        ],
+        'errors': [],
+        'warnings': []
+    }
+
+    # start mqtt client
+    client = mqtt.Client('wis2box-bufr2bufr')
+    # user credentials wis2box:wis2box
+    client.username_pw_set('wis2box', 'wis2box')
+    # connect to the broker
+    client.connect('localhost', 5883, 60)
+    # subscribe to the topic
+    client.subscribe('wis2box/#')
+    # define callback function for received messages
+    client.on_message = lambda client, userdata, message: store_message(message, channel='bufr/test') # noqa
     # start the loop
     client.loop_start()
     # transform bufr message

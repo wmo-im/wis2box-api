@@ -149,7 +149,7 @@ class DataHandler():
                     geometry = item['_meta']['geometry']
                 elif 'geometry' in item['_meta']['properties']:
                     geometry = item['_meta']['properties']['geometry']
-                meta = {
+                _meta = {
                         'id': identifier,
                         'wigos_station_identifier': wsi,
                         'data_date': data_date.isoformat(),
@@ -159,8 +159,8 @@ class DataHandler():
                     {
                         'data': base64.b64encode(the_data).decode(),
                         'filename': filename,
-                        'meta': meta,
-                        'channel': self._channel
+                        'channel': self._channel,
+                        '_meta': _meta
                     })
                 if self._notify:
                     # send the last entry in the data list as a notification
@@ -200,18 +200,17 @@ class DataHandler():
         try:
             # create the message out of the data_item
             msg = {
-                'EventName': 'wis2box:DataPublishRequest',
                 'channel': data_item['channel'],
                 'data': data_item['data'],
                 'filename': data_item['filename'],
-                'meta': data_item['meta']
+                '_meta': data_item['_meta']
             }
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,
                 'password': BROKER_PASSWORD
             }
-            publish.single(topic='wis2box/requests',
+            publish.single(topic='wis2box/data/publication',
                            payload=json.dumps(msg),
                            qos=1,
                            retain=False,

@@ -111,19 +111,17 @@ def transform_to_bufr(process_name: str,
 
     # create the expected message
     expected_message = {
-        'EventName': 'wis2box:DataPublishRequest',
         'channel': expected_response['data_items'][0]['channel'],
         'filename': expected_response['data_items'][0]['filename'],
         'data': expected_response['data_items'][0]['data'],
-        'meta': expected_response['data_items'][0]['meta']
+        '_meta': expected_response['data_items'][0]['_meta']
     }
 
     # compare the received message with the expected message
-    assert message['EventName'] == expected_message['EventName']
     assert message['channel'] == expected_message['channel']
     assert message['filename'] == expected_message['filename']
     assert message['data'] == expected_message['data']
-    assert message['meta'] == expected_message['meta']
+    assert message['_meta'] == expected_message['_meta']
 
 
 def test_synop2bufr():
@@ -147,7 +145,7 @@ def test_synop2bufr():
             {
                 'data': 'QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3', # noqa
                 'filename': 'WIGOS_0-20000-0-64400_20230119T060000.bufr4',
-                'meta': {
+                '_meta': {
                     'id': 'WIGOS_0-20000-0-64400_20230119T060000',
                     'wigos_station_identifier': '0-20000-0-64400',
                     'data_date': '2023-01-19T06:00:00',
@@ -169,7 +167,7 @@ def test_synop2bufr():
     # connect to the broker
     client.connect('localhost', 5883, 60)
     # subscribe to the topic
-    client.subscribe('wis2box/#')
+    client.subscribe('wis2box/data/publication')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel='synop/test') # noqa
     # start the loop
@@ -201,7 +199,7 @@ def test_csv2bufr():
             {
                 'data': 'QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5gMfAAAAAAALAAABgMGWx2AAAVMABOIAAAMTUwMTUAAAAAAAAAAAAAAB4H//////////////////////////+vzG+ABpHZUm5gfCNGEap///////////////////////////+du////////+CZAB9P/3R3cw+h////////////////////////////////////////////////8wiAAX//////////Af////gP////////////////////////////////////+AyP//////////////////////////+J/YPAPff2DwGT4goBadMCgN3//////////////////////////////////////////A+j/f/AMH/QDZ/oBQf0AYH6AHP////////////////////////////////////////////////////////////////////////////////////8A3Nzc3', # noqa
                 'filename': 'WIGOS_0-20000-0-15015_20220331T000000.bufr4',
-                'meta': {
+                '_meta': {
                     'id': 'WIGOS_0-20000-0-15015_20220331T000000',
                     'wigos_station_identifier': '0-20000-0-15015',
                     'data_date': '2022-03-31T00:00:00',
@@ -209,7 +207,7 @@ def test_csv2bufr():
                         'type': 'Point',
                         'coordinates': [23.94046026, 47.77706163]
                     }
-                    },
+                },
                 'channel': 'csv/test'
             }
         ],
@@ -226,7 +224,7 @@ def test_csv2bufr():
     # connect to the broker
     client.connect('localhost', 5883, 60)
     # subscribe to the topic
-    client.subscribe('wis2box/#')
+    client.subscribe('wis2box/data/publication')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel='csv/test') # noqa
     # start the loop
@@ -258,7 +256,7 @@ def test_bufr2bufr():
             {
                 'data': 'QlVGUgABAgQAABYAAFAAAAAAAAIAHAAH5gMVAAAAAAALAAABgMGWx1YAANUABOIAAAMTYzNDQAAAAAAAAAAAAAACCsJqenKiKpoaqpJ4AAAAAAAAAAAAAvzGqABiq+AldarlDSKJFBc//73w+6E0BQEAZDRftA7YAMgfQAZAAD//6YcwXPqFAIJkAuAf0HFAP////////////////////////////////////w4/0cj/4AH6AAAGQ/0AA////4BkP0QANV6/RAA0WoH0YJ/YmgZ/f2///7pgIBO///////f/////////gAAAB///////v/o/////w//ALJ7///w3Nzc3', # noqa
                 'filename': 'WIGOS_0-20000-0-16344_20220321T000000.bufr4',
-                'meta': {
+                '_meta': {
                     'id': 'WIGOS_0-20000-0-16344_20220321T000000',
                     'wigos_station_identifier': '0-20000-0-16344',
                     'data_date': '2022-03-21T00:00:00',
@@ -281,7 +279,7 @@ def test_bufr2bufr():
     # connect to the broker
     client.connect('localhost', 5883, 60)
     # subscribe to the topic
-    client.subscribe('wis2box/#')
+    client.subscribe('wis2box/data/publication')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel='bufr/test') # noqa
     # start the loop

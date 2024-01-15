@@ -18,7 +18,7 @@
 # under the License.
 #
 ###############################################################################
-FROM wmoim/dim_eccodes_baseimage:2.28.0
+FROM wmoim/dim_eccodes_baseimage:2.31.0
 
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml

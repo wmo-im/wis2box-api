@@ -19,9 +19,10 @@
 #
 ###############################################################################
 
-from datetime import datetime
 import logging
 import tempfile
+
+from datetime import datetime
 
 from bufr2geojson import BUFRParser
 from eccodes import (

@@ -22,6 +22,7 @@
 from copy import deepcopy
 import os
 import json
+
 import json_merge_patch
 from jsonschema.exceptions import ValidationError
 import logging

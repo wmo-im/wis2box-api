@@ -19,7 +19,9 @@
 #
 ###############################################################################
 
+import json
 import logging
+import os
 
 from pygeoapi.process.base import BaseProcessor
 
@@ -30,9 +32,6 @@ from wis2box_api.wis2box.station import Stations
 import csv2bufr.templates as c2bt
 
 from csv2bufr import transform as transform_csv
-
-import json
-import os
 
 LOGGER = logging.getLogger(__name__)
 

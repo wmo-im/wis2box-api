@@ -19,14 +19,13 @@
 #
 ###############################################################################
 
-import logging
 import base64
+import logging
 
 from pygeoapi.process.base import BaseProcessor
 
 from wis2box_api.wis2box.handle import handle_error
 from wis2box_api.wis2box.handle import DataHandler
-
 from wis2box_api.wis2box.bufr4 import ObservationDataBUFR
 
 LOGGER = logging.getLogger(__name__)

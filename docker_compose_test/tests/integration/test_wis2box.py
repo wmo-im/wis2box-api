@@ -23,9 +23,10 @@
 # .github/workflows/wis2box_test.yml has been executed
 
 import json
-import time
-import requests
 import os
+import time
+
+import requests
 
 import paho.mqtt.client as mqtt
 
@@ -90,11 +91,8 @@ def transform_to_bufr(process_name: str,
     response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
     response_json = response.json()
     # print(response_json)
-    assert response_json['result'] == expected_response['result']
-    assert response_json['messages transformed'] == expected_response['messages transformed'] # noqa
-    assert response_json['messages published'] == expected_response['messages published'] # noqa
-    assert response_json['errors'] == expected_response['errors']
-    assert response_json['warnings'] == expected_response['warnings']
+    for key in ['result', 'messages transformed', 'messages published', 'errors', 'warnings']: # noqa
+        assert response_json[key] == expected_response[key]
 
     filename = data['inputs']['channel'].replace('/', '_') + '.json'
 
@@ -118,10 +116,8 @@ def transform_to_bufr(process_name: str,
     }
 
     # compare the received message with the expected message
-    assert message['channel'] == expected_message['channel']
-    assert message['filename'] == expected_message['filename']
-    assert message['data'] == expected_message['data']
-    assert message['_meta'] == expected_message['_meta']
+    for key in ['channel', 'filename', 'data', '_meta']:
+        assert message[key] == expected_message[key]
 
 
 def test_synop2bufr():

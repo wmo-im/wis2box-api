@@ -19,9 +19,10 @@
 #
 ###############################################################################
 
-import logging
-import requests
 import base64
+import logging
+
+import requests
 
 from pygeoapi.process.base import BaseProcessor
 from bufr2geojson import transform as as_geojson

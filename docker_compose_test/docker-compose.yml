@@ -5,7 +5,6 @@ services:
       - test.env
     build:
       context: ./../
-      dockerfile: Dockerfile
     depends_on:
       elasticsearch:
         condition: service_healthy

@@ -80,3 +80,4 @@ All bugs, enhancements and issues are managed on [GitHub](https://github.com/wmo
 ## Contact
 
 * [Tom Kralidis](https://github.com/tomkralidis)
+* [Maaike Limper](https://github.com/maaikelimper)

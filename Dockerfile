@@ -23,7 +23,7 @@ FROM wmoim/dim_eccodes_baseimage:2.31.0
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
-RUN apt-get update -y && apt-get install curl python3-pip git unzip -y
+RUN apt-get update -y && apt-get install cron curl python3-pip git unzip -y
 # install gunicorn, gevent, gdal, elasticsearch
 RUN apt-get install -y --no-install-recommends \
     libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev \
@@ -47,5 +47,10 @@ COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
 RUN cd /app \
     && pip3 install -e . \
     && chmod +x /app/docker/es-entrypoint.sh /app/docker/wait-for-elasticsearch.sh
+
+# add wis2box.cron to crontab
+COPY ./docker/wis2box-api.cron /etc/cron.d/wis2box-api.cron
+
+RUN chmod 0644 /etc/cron.d/wis2box-api.cron && crontab /etc/cron.d/wis2box-api.cron
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]

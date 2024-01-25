@@ -34,6 +34,11 @@ from pygeoapi.process.manager.tinydb import TinyDBManager
 
 LOGGER = logging.getLogger(__name__)
 
+
+# create a new pool of processors
+
+_pool = mp.Pool( min(1,mp.cpu_count() - 2))  # noqa arbitrary number of processes.
+
 class TinyDBManagerMP(TinyDBManager):
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
                                data_dict: dict) -> Tuple[str, None, JobStatus]:
@@ -50,9 +55,8 @@ class TinyDBManagerMP(TinyDBManager):
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
-        _process = mp.Process(
-            target=self._execute_handler_sync,
-            args=(p, job_id, data_dict)
-        )
-        _process.start()
+        _pool.apply_async(
+            func=self._execute_handler_sync,
+            args=(p, job_id, data_dict))
+
         return 'application/json', None, JobStatus.accepted

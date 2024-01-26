@@ -54,3 +54,4 @@ COPY ./docker/wis2box-api.cron /etc/cron.d/wis2box-api.cron
 RUN chmod 0644 /etc/cron.d/wis2box-api.cron && crontab /etc/cron.d/wis2box-api.cron
 
 ENTRYPOINT [ "/app/docker/es-entrypoint.sh" ]
+#ENTRYPOINT [ "/bin/bash" ]

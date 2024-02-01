@@ -26,7 +26,7 @@ ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 RUN apt-get update -y && apt-get install cron curl python3-pip git unzip -y
 # install gunicorn, gevent, gdal, elasticsearch
 RUN apt-get install -y --no-install-recommends \
-    libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev \
+    libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # install pygeoapi, pywcmp, pymetdecoder, synop2bufr, csv2bufr, bufr2geojson
@@ -43,6 +43,7 @@ RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@ma
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
 COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
+#COPY ./docker/pygeoapi-openapi.yml $PYGEOAPI_OPENAPI
 
 RUN cd /app \
     && pip3 install -e . \

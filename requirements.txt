@@ -6,4 +6,6 @@ gevent==21.8.0
 iso3166
 json-merge-patch
 paho-mqtt
+psycopg2
 pygeometa
+sqlalchemy==2.0.25

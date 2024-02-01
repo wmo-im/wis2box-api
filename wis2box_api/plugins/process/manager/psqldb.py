@@ -1,8 +1,8 @@
 # =================================================================
 #
-# Authors: Alexander Pilz <a.pilz@52north.org>
+# Authors: David I. Berry (dberry@wmo.int)
 #
-# Copyright (c) 2023 Alexander Pilz
+# Copyright (c) 2024 WMO
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation

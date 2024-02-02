@@ -52,12 +52,8 @@ from pygeoapi.util import (
     RequestedProcessExecutionMode,
 )
 
-#mp.set_start_method("spawn")
+
 LOGGER = logging.getLogger(__name__)
-#LOGGER.warning("spawning process pool")
-# _pool = mp.Pool( max(1,mp.cpu_count() - 2))  # noqa arbitrary # of procs.
-#_pool = mp.Pool(1)
-#LOGGER.warning(max(1,mp.cpu_count() - 2))
 
 class Base(DeclarativeBase):
     pass
@@ -116,26 +112,31 @@ class PsqlDBManager(BaseManager):
                          exc_info=(traceback))
             return False
 
- #   def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-        #                              data_dict: dict) ->
-        #                              Tuple[str, None, JobStatus]:
+    def _execute_handler_async(self, p: BaseProcessor,
+                               job_id: str, data_dict: dict) -> \
+            Tuple[str, None, JobStatus]:
         #"""
-        #Updated execution handler to execute a process in a background
-        #process using `multiprocessing.Process`##
+        # Updated execution handler to execute a process in a background
+        # process using `multiprocessing.Process`##
         #
+        # :param p: `pygeoapi.process` object
+        # :param job_id: job identifier
+        # :param data_dict: `dict` of data parameters
         #
-        #:param p: `pygeoapi.process` object
-        #:param job_id: job identifier
-        #:param data_dict: `dict` of data parameters
-        #
-        #:returns: tuple of None (i.e. initial response payload)
+        # :returns: tuple of None (i.e. initial response payload)
         #                  and JobStatus.accepted (i.e. initial job status)
         #"""
-        #_pool.apply_async(
-            #            func=self._execute_handler_sync,
-            #args=(p, job_id, data_dict))
-        #
-        #return 'application/json', None, JobStatus.accepted
+
+        # Get number of current processes and wait if too many running
+        while len(mp.active_children()) == mp.cpu_count():
+            sleep(0.1)
+        # spawn / start process
+        _p = mp.Process(target = self._execute_handler_sync,
+                        args = (p, job_id, data_dict))
+        _p.start()
+        # return
+        return 'application/json', None, JobStatus.accepted
+
 
     def destroy(self):
         try:

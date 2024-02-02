@@ -94,7 +94,7 @@ resources:
     pygeometa-metadata-generate:
         type: process
         processor:
-            name: pywis_topics.pygeoapi_plugin.PygeometaMetadataGenerateProcessor
+            name: pygeometa.pygeoapi_plugin.PygeometaMetadataGenerateProcessor
 
     pywis-topics-list:
         type: process

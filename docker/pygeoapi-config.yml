@@ -15,15 +15,8 @@ server:
     templates:
         path: /pygeoapi/pygeoapi/templates
     manager:
-        #name: TinyDB
-        #connection: /tmp/pygeoapi-process-manager.db
         name: wis2box_api.plugins.process.manager.psqldb.PsqlDBManager
         connection: "postgresql+psycopg2://wis2box:changeme@postgres:5432/wis2box"
-            #user: ${POSTGRES_USER}
-            #password: ${POSTGRES_PASSWORD}
-            #host: ${POSTGRES_HOST}
-            #port: ${POSTGRES_PORT}
-            #database: ${POSTGRES_DATABASE}
         output_dir: /tmp/
 
 

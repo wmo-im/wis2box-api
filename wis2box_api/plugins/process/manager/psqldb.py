@@ -29,6 +29,7 @@
 import json
 import logging
 import multiprocessing as mp
+from time import sleep
 import traceback
 from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
@@ -131,6 +132,7 @@ class PsqlDBManager(BaseManager):
         while len(mp.active_children()) == mp.cpu_count():
             sleep(0.1)
         # spawn / start process
+        LOGGER.warning("spawning process")
         _p = mp.Process(target = self._execute_handler_sync,
                         args = (p, job_id, data_dict))
         _p.start()
@@ -195,6 +197,7 @@ class PsqlDBManager(BaseManager):
             query = text("SELECT job from job_manager_pygeoapi WHERE id =:job_id")  # noqa
             query = query.bindparams(bindparam('job_id', type_ = String))
             result = self.db.execute(query, parameters=dict(job_id=job_id)).fetchone()  # noqa
+            LOGGER.warning(result)
             result = dict(result[0])  # convert to dict
             # update the dict
             for k,v in update_dict.items():

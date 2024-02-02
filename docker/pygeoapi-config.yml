@@ -96,12 +96,12 @@ resources:
         processor:
             name: pygeometa.pygeoapi_plugin.PygeometaMetadataGenerateProcessor
 
-    pywcmp-wis2-topics-list:
+    pywis-topics-list:
         type: process
         processor:
-            name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyListTopicsProcessor
+            name: pywis_topics.pygeoapi_plugin.WIS2TopicHierarchyListTopicsProcessor
 
-    pywcmp-wis2-topics-validate:
+    pywis-topics-validate:
         type: process
         processor:
             name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor

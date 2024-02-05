@@ -90,7 +90,7 @@ def transform_to_bufr(process_name: str,
     # get result from job_location_url/results?f=json
     response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
     response_json = response.json()
-    # print(response_json)
+
     for key in ['result', 'messages transformed', 'messages published', 'errors', 'warnings']: # noqa
         assert response_json[key] == expected_response[key]
 
@@ -184,7 +184,7 @@ def test_csv2bufr():
             'data': 'wsi_series,wsi_issuer,wsi_issue_number,wsi_local,wmo_block_number,wmo_station_number,station_type,year,month,day,hour,minute,latitude,longitude,station_height_above_msl,barometer_height_above_msl,station_pressure,msl_pressure,geopotential_height,thermometer_height,air_temperature,dewpoint_temperature,relative_humidity,method_of_ground_state_measurement,ground_state,method_of_snow_depth_measurement,snow_depth,precipitation_intensity,anemometer_height,time_period_of_wind,wind_direction,wind_speed,maximum_wind_gust_direction_10_minutes,maximum_wind_gust_speed_10_minutes,maximum_wind_gust_direction_1_hour,maximum_wind_gust_speed_1_hour,maximum_wind_gust_direction_3_hours,maximum_wind_gust_speed_3_hours,rain_sensor_height,total_precipitation_1_hour,total_precipitation_3_hours,total_precipitation_6_hours,total_precipitation_12_hours,total_precipitation_24_hours\n0,20000,0,15015,15,15,1,2022,3,31,0,0,47.77706163,23.94046026,503,504.43,100940,20104,1448,5,298.15,294.55,80.4,3,1,1,0,0.004,10,-10,30,3,30,5,40,9,20,11,2,4.7,5.3,7.9,9.5,11.4', # noqa
             'channel': 'csv/test',
             'notify': True,
-            'template': 'aws-template'
+            'template': '21327aac-46a6-437d-ae81-7a16a637dd2c'
         }
     }
     expected_response = {

@@ -26,18 +26,24 @@ ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 RUN apt-get update -y && apt-get install cron curl python3-pip git unzip -y
 # install gunicorn, gevent, gdal, elasticsearch
 RUN apt-get install -y --no-install-recommends \
-    libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix \
+    libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix wget \
     && rm -rf /var/lib/apt/lists/*
 
 # install pygeoapi, pywcmp, pymetdecoder, synop2bufr, csv2bufr, bufr2geojson
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywcmp/archive/refs/tags/0.4.0.zip \
-    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.7.4.zip \
+    https://github.com/wmo-im/csv2bufr/archive/refs/tags/terst-release.zip \
     https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.1.zip \
     https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip  \
     https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.6.4.zip \
     https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.6.2.zip
+
+# install csv2bufr templates
+RUN mkdir /opt/csv2bufr &&  \
+    cd /opt/csv2bufr && \
+    wget https://github.com/wmo-im/csv2bufr-templates/archive/refs/tags/v0.1.tar.gz && \
+    tar -zxf v0.1.tar.gz --strip-components=1 csv2bufr-templates-0.1/templates
 
 # install wis2box-api
 COPY . /app

@@ -109,7 +109,7 @@ resources:
     pywis-topics-validate:
         type: process
         processor:
-            name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor
+            name: pywis_topics.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor
 
     pywcmp-wis2-wcmp2-ets:
         type: process

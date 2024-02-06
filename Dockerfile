@@ -32,7 +32,8 @@ RUN apt-get install -y --no-install-recommends \
 # install pygeoapi, pywcmp, pymetdecoder, synop2bufr, csv2bufr, bufr2geojson
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install --no-cache-dir \
-    https://github.com/wmo-im/pywcmp/archive/refs/tags/0.4.0.zip \
+    https://github.com/wmo-im/pywis-topics/archive/main.zip \
+    https://github.com/wmo-im/pywcmp/archive/master.zip \
     https://github.com/wmo-im/csv2bufr/archive/refs/tags/terst-release.zip \
     https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.1.zip \
     https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip  \

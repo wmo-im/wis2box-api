@@ -26,29 +26,21 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
 import json
 import logging
 import traceback
-from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
-from sqlalchemy import (create_engine, Integer, String, text, bindparam)
+from sqlalchemy import (create_engine, String, text, bindparam)
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import (DeclarativeBase, Mapped, mapped_column, Session)
+from sqlalchemy.orm import (DeclarativeBase, mapped_column)
 
 from pygeoapi.process.base import (
-    BaseProcessor,
     JobNotFoundError,
     JobResultNotFoundError,
 )
 from pygeoapi.process.manager.base import BaseManager
-
-from pygeoapi.util import (
-    DATETIME_FORMAT,
-    JobStatus,
-    ProcessExecutionMode,
-    RequestedProcessExecutionMode,
-)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -59,7 +51,7 @@ class Base(DeclarativeBase):
 
 
 class JobManagerPygeoapi(Base):
-    __tablename__ = "job_manager_pygeoapi"
+    __tablename__ = 'job_manager_pygeoapi'
     id = mapped_column(String, primary_key=True)
     job = mapped_column(JSONB, nullable=False)
 
@@ -72,9 +64,8 @@ class PsqlDBManager(BaseManager):
         # First connection string
         try:
             conn_str = self.connection
-        except:
-            LOGGER.error("JOBMANAGER - connect error",
-                         exc_info=(traceback))
+        except Exception as err:
+            LOGGER.error(f'JOBMANAGER - connect error: {err}')
             return False
 
         # now engine and connect
@@ -87,32 +78,30 @@ class PsqlDBManager(BaseManager):
             )
             Base.metadata.create_all(self.engine)
             self._connect()
-        except:
-            LOGGER.error("JOBMANAGER - connect error",
-                         exc_info=(traceback))
+        except Exception as err:
+            LOGGER.error(f'JOBMANAGER - connect error: {err}')
             return False
-
 
     def _connect(self):
         try:
             self.db = self.engine.connect()
             # make sure table exists
 
-            LOGGER.info("JOBMANAGER - psql connected")
+            LOGGER.info('JOBMANAGER - psql connected')
             return True
         except Exception:
             self.destroy()
-            LOGGER.error("JOBMANAGER - connect error",
+            LOGGER.error('JOBMANAGER - connect error',
                          exc_info=(traceback))
             return False
 
     def destroy(self):
         try:
             self.db.close()
-            LOGGER.info("JOBMANAGER - psql disconnected")
+            LOGGER.info('JOBMANAGER - psql disconnected')
             return True
         except Exception:
-            LOGGER.error("JOBMANAGER - destroy error",
+            LOGGER.error('JOBMANAGER - destroy error',
                          exc_info=(traceback))
             return False
 
@@ -122,13 +111,13 @@ class PsqlDBManager(BaseManager):
                 query = text("SELECT job from job_manager_pygeoapi WHERE job->>'status' = ':status'")  # noqa
                 result = self.db.execute(query, parameters=dict(status = status)).fetchall()  # noqa
             else:
-                query = text("SELECT job from job_manager_pygeoapi")  # noqa
+                query = text('SELECT job from job_manager_pygeoapi')  # noqa
                 result = self.db.execute(query).fetchall()
             # now convert jobs to list of dicts
             jobs = [dict(row[0]) for row in result]
             return jobs
         except Exception:
-            LOGGER.error("JOBMANAGER - get_jobs error",
+            LOGGER.error('JOBMANAGER - get_jobs error',
                          exc_info=(traceback))
             return False
 
@@ -137,89 +126,92 @@ class PsqlDBManager(BaseManager):
         if job_id is None:
             job_id = str(uuid.uuid4())
         try:
-            query = text("INSERT INTO job_manager_pygeoapi (id, job) VALUES (:job_id, :job_metadata) RETURNING id")  # noqa
+            query = text('INSERT INTO job_manager_pygeoapi (id, job) VALUES (:job_id, :job_metadata) RETURNING id')  # noqa
             query = query.bindparams(bindparam('job_metadata', type_=JSONB),
                                      bindparam('job_id', type_=String))
             result = self.db.execute(query, parameters=dict(job_id = job_id, job_metadata = job_metadata))  # noqa
             LOGGER.warning(result)
             doc_id = result.fetchone()[0]
             self.db.commit()
-            LOGGER.info("JOBMANAGER - psql job added")
+            LOGGER.info('JOBMANAGER - psql job added')
             return doc_id
 
         except Exception:
-            LOGGER.error("JOBMANAGER - add_job error",
+            LOGGER.error('JOBMANAGER - add_job error',
                          exc_info=(traceback))
             return False
 
     def update_job(self, job_id, update_dict):
         try:
             # first get the job to update
-            query = text("SELECT job from job_manager_pygeoapi WHERE id =:job_id")  # noqa
-            query = query.bindparams(bindparam('job_id', type_ = String))
+            query = text('SELECT job from job_manager_pygeoapi WHERE id =:job_id')  # noqa
+            query = query.bindparams(bindparam('job_id', type_=String))
             result = self.db.execute(query, parameters=dict(job_id=job_id)).fetchone()  # noqa
             LOGGER.warning(result)
             result = dict(result[0])  # convert to dict
             # update the dict
-            for k,v in update_dict.items():
+            for k, v in update_dict.items():
                 result[k] = v
-            LOGGER.warning("updating ...")
+            LOGGER.warning('updating ...')
             # now back to DB
-            query = text("UPDATE job_manager_pygeoapi SET job =:update_dict WHERE id =:job_id RETURNING id")  # noqa
+            query = text('UPDATE job_manager_pygeoapi SET job =:update_dict WHERE id =:job_id RETURNING id')  # noqa
             query = query.bindparams(bindparam('job_id', type_=String),
                                      bindparam('update_dict', type_=JSONB))
             self.db.execute(query.bindparams(bindparam('update_dict', type_=JSONB)), parameters=dict(update_dict = result, job_id = job_id))  # noqa
-            LOGGER.warning("committing ...")
+            LOGGER.warning('committing ...')
             self.db.commit()
-            LOGGER.info("JOBMANAGER - psql job updated")
+            LOGGER.info('JOBMANAGER - psql job updated')
             return True
 
         except Exception:
-            LOGGER.error("JOBMANAGER - psql update_job error",
+            LOGGER.error('JOBMANAGER - psql update_job error',
                          exc_info=(traceback))
             return False
 
     def delete_job(self, job_id):
         try:
-            query = text("DELETE FROM job_manager_pygeoapi where id =:job_id")
+            query = text('DELETE FROM job_manager_pygeoapi where id =:job_id')
             query = query.bindparams(bindparam('job_id', type_=String))
-            result = self.db.execute(query, parameters=dict(job_id = job_id))
+            self.db.execute(query, parameters=dict(job_id=job_id))
             self.db.commit()
-            LOGGER.info("JOBMANAGER - psql job deleted")
+            LOGGER.info('JOBMANAGER - psql job deleted')
             return True
         except Exception:
-            LOGGER.error("JOBMANAGER - psql delete_job error",
+            LOGGER.error('JOBMANAGER - psql delete_job error',
                          exc_info=(traceback))
             return False
 
     def get_job(self, job_id):
         try:
-            query = text("SELECT job from job_manager_pygeoapi WHERE id =:job_id")  # noqa
+            query = text('SELECT job from job_manager_pygeoapi WHERE id =:job_id')  # noqa
             query = query.bindparams(bindparam('job_id', type_=String))
-            result = self.db.execute(query, parameters=dict(job_id = job_id))
+            result = self.db.execute(query, parameters=dict(job_id=job_id))
+            # check if job exists
+            if result.rowcount == 0:
+                raise JobNotFoundError()
             entry = result.fetchone()[0]
-            LOGGER.info("JOBMANAGER - psql job queried")
+            LOGGER.info('JOBMANAGER - psql job queried')
             return entry
         except Exception as err:
-            LOGGER.error("JOBMANAGER - psql get_job error",
+            LOGGER.error('JOBMANAGER - psql get_job error',
                          exc_info=(traceback))
             raise JobNotFoundError() from err
 
     def get_job_result(self, job_id):
         try:
-            query = text("SELECT job from job_manager_pygeoapi WHERE id =:job_id")  # noqa
+            query = text('SELECT job from job_manager_pygeoapi WHERE id =:job_id')  # noqa
             query = query.bindparams(bindparam('job_id', type_=String))
-            result = self.db.execute(query, parameters=dict(job_id = job_id))
+            result = self.db.execute(query, parameters=dict(job_id=job_id))
             entry = result.fetchone()[0]
-            if entry["status"] != "successful":
-                LOGGER.info("JOBMANAGER - job not finished or failed")
+            if entry['status'] != 'successful':
+                LOGGER.info('JOBMANAGER - job not finished or failed')
                 return (None,)
-            with open(entry["location"], "r") as file:
+            with open(entry['location'], 'r') as file:
                 data = json.load(file)
-            LOGGER.info("JOBMANAGER - psql job result queried")
-            return entry["mimetype"], data
+            LOGGER.info('JOBMANAGER - psql job result queried')
+            return entry['mimetype'], data
         except Exception as err:
-            LOGGER.error("JOBMANAGER - psql get_job_result error",
+            LOGGER.error('JOBMANAGER - psql get_job_result error',
                          exc_info=(traceback))
             raise JobResultNotFoundError() from err
 

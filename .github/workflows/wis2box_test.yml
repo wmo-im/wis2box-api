@@ -25,7 +25,7 @@ jobs:
           docker-compose up -d  --build
 
       - name: Wait for service to be ready
-        run: sleep 5
+        run: sleep 30
 
       - name: publish stations
         working-directory: docker_compose_test

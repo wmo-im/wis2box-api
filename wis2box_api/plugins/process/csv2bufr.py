@@ -84,7 +84,7 @@ PROCESS_METADATA = {
     },
     'outputs': {
         'path': {
-            'title': {'en': 'ConverPublishResult'},
+            'title': {'en': 'ConvertPublishResult'},
             'description': {
                 'en': 'Conversion and publish result in JSON format'
             },
@@ -143,10 +143,11 @@ class CSVPublishProcessor(BaseProcessor):
             csv_data = data['data']
             template = data['template']
 
-            list_templates = c2bt.list_templates()
             if not os.path.isfile(template):
-                if template not in list_templates:
-                    raise Exception(f'Unknown template: {template}, options are: {list_templates}') # noqa
+                lt = c2bt.list_templates()
+                tn = [ x['name'] for x in lt.values()]
+                if template not in tn:
+                    raise Exception(f"Unknown template: {template}, options are: {tn.join(', ')}") # noqa
                 mappings = c2bt.load_template(template)
             else:
                 with open(template) as fh:

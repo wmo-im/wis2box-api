@@ -18,7 +18,7 @@
 # under the License.
 #
 ###############################################################################
-FROM wmoim/dim_eccodes_baseimage:2.31.0
+FROM wmoim/dim_eccodes_baseimage:2.34.0
 
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
@@ -34,8 +34,8 @@ RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@ma
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/main.zip \
     https://github.com/wmo-im/pywcmp/archive/master.zip \
-    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.8.0.zip \
-    https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.5.1.zip \
+    https://github.com/wmo-im/bufr2geojson/archive/main.zip \
+    https://github.com/wmo-im/csv2bufr/archive/refs/tags/v0.8.1.zip \
     https://github.com/wmo-im/pymetdecoder/archive/refs/tags/v0.1.10.zip  \
     https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.6.4.zip \
     https://github.com/wmo-im/synop2bufr/archive/refs/tags/v0.6.2.zip
@@ -43,8 +43,8 @@ RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@ma
 # install csv2bufr templates
 RUN mkdir /opt/csv2bufr &&  \
     cd /opt/csv2bufr && \
-    wget https://github.com/wmo-im/csv2bufr-templates/archive/refs/tags/v0.1.tar.gz && \
-    tar -zxf v0.1.tar.gz --strip-components=1 csv2bufr-templates-0.1/templates
+    wget https://github.com/wmo-im/csv2bufr-templates/archive/refs/tags/v0.2.tar.gz && \
+    tar -zxf v0.2.tar.gz --strip-components=1 csv2bufr-templates-0.2/templates
 
 # install wis2box-api
 COPY . /app

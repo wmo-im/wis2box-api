@@ -147,7 +147,7 @@ class CSVPublishProcessor(BaseProcessor):
                 lt = c2bt.list_templates()
                 tn = [ x['name'] for x in lt.values()]
                 if template not in tn:
-                    raise Exception(f"Unknown template: {template}, options are: {tn.join(', ')}") # noqa
+                    raise Exception(f"Unknown template: {template}, options are: {', '.join(tn)}") # noqa
                 mappings = c2bt.load_template(template)
             else:
                 with open(template) as fh:

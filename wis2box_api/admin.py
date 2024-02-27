@@ -22,6 +22,7 @@
 from copy import deepcopy
 import os
 import json
+
 import json_merge_patch
 from jsonschema.exceptions import ValidationError
 import logging
@@ -30,13 +31,10 @@ import tempfile
 from typing import Any, Tuple, Union
 import yaml
 
-from pygeoapi.openapi import load_openapi_document
 
 from pygeoapi.api import API, APIRequest, F_HTML, pre_process
-
 from pygeoapi.config import validate_config
-from pygeoapi.openapi import get_oas
-# from pygeoapi.openapi import validate_openapi_document
+from pygeoapi.openapi import get_oas, load_openapi_document
 from pygeoapi.util import to_json, render_j2_template
 
 

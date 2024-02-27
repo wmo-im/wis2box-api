@@ -23,11 +23,11 @@ from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import os
 import logging
-import requests
 
-from pygeoapi.util import yaml_load, url_join, get_path_basename
+from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
+from wis2box_api.wis2box.env import WIS2BOX_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,9 +141,17 @@ class StationInfoProcessor(BaseProcessor):
 
         try:
             collection_id = data['collection']
-            collection_config = CONFIG['resources'][collection_id]
-            index_url = collection_config['providers'][0]['data']
-            index = get_path_basename(index_url)
+            topic = 'notfound'
+            index = 'notfound'
+            if collection_id in CONFIG['resources']:
+                collection_config = CONFIG['resources'][collection_id]
+                index_url = collection_config['providers'][0]['data']
+                index = get_path_basename(index_url)
+                # topic is index with . replace by /
+                topic = index.replace('.', '/')
+                # topic should start with origin/a/wis2
+                if topic.startswith('origin/a/wis2') is False:
+                    topic = 'origin/a/wis2/' + topic
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)
@@ -164,7 +172,7 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
-        fc = self._load_stations(wigos_station_identifiers, collection_id)
+        fc = self._load_stations(wigos_station_identifiers, topic, collection_id) # noqa
         if None in fc['features']:
             msg = 'Invalid WIGOS station identifier provided'
             LOGGER.error(msg)
@@ -198,41 +206,67 @@ class StationInfoProcessor(BaseProcessor):
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-        response = self.es.search(index=index, **query)
-        response_buckets = response['aggregations']['each']['buckets']
+        if index != 'notfound':
+            response = self.es.search(index=index, **query)
+            response_buckets = response['aggregations']['each']['buckets']
 
-        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets}
+            hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
 
-        for station in outputs['value']['features']:
-            station['properties']['num_obs'] = hits.get(station['id'], 0)
+            for station in outputs['value']['features']:
+                station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 
     def _load_stations(self, wigos_station_identifiers: list = [],
-                       collection_id: str = ''):
+                       topic: str = '', collection_id: str = ''):
         fc = {'type': 'FeatureCollection', 'features': []}
-        stations_url = url_join(
-            os.getenv('WIS2BOX_DOCKER_API_URL'), 'collections/stations/items'
-        )
 
-        if wigos_station_identifiers:
+        # load stations from backend
+        LOGGER.info("Loading stations from backend")
+        es = Elasticsearch(os.getenv('WIS2BOX_API_BACKEND_URL'))
+        nbatch = 50
+        res = es.search(index="stations", query={"match_all": {}}, size=nbatch)
+        if len(res['hits']['hits']) == 0:
+            LOGGER.error('No stations found')
+            return fc
+        for hit in res['hits']['hits']:
+            fc['features'].append(hit['_source'])
+        while len(res['hits']['hits']) == nbatch:
+            res = es.search(index="stations",
+                            query={"match_all": {}},
+                            size=nbatch,
+                            from_=len(fc['features']))
+            for hit in res['hits']['hits']:
+                fc['features'].append(hit['_source'])
+        LOGGER.info(f"Found {len(fc['features'])} stations")
 
-            for wsi in wigos_station_identifiers:
-                r = requests.get(f'{stations_url}/{wsi}')
-                if r.ok:
-                    fc['features'].append(r.json())
-                else:
-                    fc['features'].append(None)
+        dm_link = {
+            "rel": "canonical",
+            "href": f"{WIS2BOX_API_URL}/collections/discovery-metadata/items/{collection_id}",  # noqa
+            "type": "application/json",
+            "title": collection_id  # noqa
+        }
 
-        else:
-            r = requests.get(
-                stations_url, params={'resulttype': 'hits'}
-            ).json()
-
-            fc = requests.get(
-                stations_url, params={
-                    'limit': r['numberMatched'], 'topic': collection_id}
-            ).json()
+        # filter by topic
+        ff = []
+        try:
+            for f in fc['features']:
+                if topic.replace('origin/a/wis2/', '') in f['properties']['topics']:  # noqa
+                    f['properties']['topic'] = collection_id
+                    f['links'] = [dm_link]
+                    ff.append(f)
+                elif topic in f['properties']['topics']:
+                    f['properties']['topic'] = collection_id
+                    f['links'] = [dm_link]
+                    ff.append(f)
+            fc['features'] = ff
+        except Exception as err:
+            LOGGER.error(err)
+            LOGGER.error('Error filtering stations by topic')
+            LOGGER.error('Returning empty feature collection')
+            fc['features'] = []
+        # after filter
+        LOGGER.info(f"Found {len(fc['features'])} stations for topic {topic}")
 
         return fc
 

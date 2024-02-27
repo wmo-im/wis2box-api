@@ -14,6 +14,10 @@ server:
         attribution: ${WIS2BOX_BASEMAP_ATTRIBUTION}
     templates:
         path: /pygeoapi/pygeoapi/templates
+    manager:
+        name: TinyDB
+        connection: /tmp/pygeoapi-process-manager.db
+        output_dir: /tmp/
 
 logging:
     level: ${WIS2BOX_LOGGING_LOGLEVEL}
@@ -104,7 +108,7 @@ resources:
     pywis-topics-validate:
         type: process
         processor:
-            name: pywcmp.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor
+            name: pywis_topics.pygeoapi_plugin.WIS2TopicHierarchyValidateTopicProcessor
 
     pywcmp-wis2-wcmp2-ets:
         type: process
@@ -115,3 +119,29 @@ resources:
         type: process
         processor:
             name: wis2box_api.plugins.process.wmo_ra.WMORAProcessor
+
+    bufr2geojson:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.bufr2geojson.Bufr2geojsonProcessor
+
+    oscar2feature:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.oscar2feature.Oscar2FeatureProcessor
+
+    wis2box-synop2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.synop2bufr.SynopPublishProcessor
+
+    wis2box-csv2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.csv2bufr.CSVPublishProcessor
+
+    wis2box-bufr2bufr:
+      type: process
+      processor:
+        name: wis2box_api.plugins.process.bufr2bufr.BufrPublishProcessor
+

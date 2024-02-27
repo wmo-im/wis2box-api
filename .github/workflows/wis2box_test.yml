@@ -1,0 +1,53 @@
+name: test-with-wis2box
+
+on: [ push, pull_request ]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        name: setup Python
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        working-directory: docker_compose_test
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install -r requirements.txt
+        
+      - name: Docker Compose up -d --build
+        working-directory: docker_compose_test
+        run:
+          docker-compose up -d  --build
+
+      - name: Wait for service to be ready
+        run: sleep 30
+
+      - name: publish stations
+        working-directory: docker_compose_test
+        run: |
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection
+
+      - name: Check status code API
+        working-directory: docker_compose_test  
+        run: |
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4343/oapi)
+          if [[ $status_code -ne 200 ]]; then
+            echo "Request failed with status code $status_code"
+            exit 1
+          fi
+
+      - name: run integration tests ⚙️
+        working-directory: docker_compose_test 
+        run: |
+          pytest -s tests/integration
+
+      - name: failed tests 🚩
+        working-directory: docker_compose_test
+        if: ${{ failure() }}
+        run: |
+          docker-compose logs

@@ -19,4 +19,19 @@
 #
 ###############################################################################
 
-__version__ = 'wis2box-1.0b7-dev'
+import os
+
+WIS2BOX_DOCKER_API_URL = os.environ.get('WIS2BOX_DOCKER_API_URL', 'http://wis2box-api:80/oapi') # noqa
+WIS2BOX_URL = os.environ.get('WIS2BOX_URL')
+WIS2BOX_API_URL = os.environ.get('WIS2BOX_API_URL')
+
+API_BACKEND_URL = os.environ.get('WIS2BOX_API_BACKEND_URL')
+
+BROKER_USERNAME = os.environ.get('WIS2BOX_BROKER_USERNAME')
+BROKER_PASSWORD = os.environ.get('WIS2BOX_BROKER_PASSWORD')
+BROKER_HOST = os.environ.get('WIS2BOX_BROKER_HOST')
+BROKER_PORT = os.environ.get('WIS2BOX_BROKER_PORT')
+BROKER_PUBLIC = os.environ.get('WIS2BOX_BROKER_PUBLIC')
+
+STORAGE_PUBLIC_URL = f"{WIS2BOX_URL}/data"
+STORAGE_SOURCE = os.environ.get('WIS2BOX_STORAGE_SOURCE')

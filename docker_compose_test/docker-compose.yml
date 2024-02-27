@@ -1,0 +1,95 @@
+services:
+  wis2box-api:
+    container_name: wis2box-api-test
+    env_file:
+      - test.env
+    build:
+      context: ./../
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/oapi/admin/resources"]
+      interval: 5s
+      retries: 100
+    ports:
+      - "4343:80"
+
+  minio:
+    image: minio/minio:RELEASE.2022-12-02T19-19-22Z.fips
+    mem_limit: 512m
+    memswap_limit: 512m
+    restart: always
+    env_file:
+      - test.env
+    command: server --console-address ":9001" /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+    depends_on:
+      mosquitto:
+        condition: service_started
+    ports:
+      - "4001:9001"
+
+  wis2box-management:
+    container_name: wis2box-api-test-wis2box-management
+    mem_limit: 1g
+    memswap_limit: 1g
+    restart: always
+    image: ghcr.io/wmo-im/wis2box-management:latest
+    env_file:
+      - test.env
+    volumes:
+      - ./tests/data:/data/wis2box:rw
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      wis2box-api:
+        condition: service_healthy
+    command: ["wis2box", "pubsub" , "subscribe"]
+
+  wis2box-auth:
+    container_name: wis2box-api-test-wis2box-auth
+    restart: always
+    image: ghcr.io/wmo-im/wis2box-auth:latest
+    env_file:
+      - test.env
+    volumes:
+      - /tmp:/data/wis2box:rw
+    
+  mosquitto:
+    container_name: wis2box-api-test-mosquitto
+    restart: always
+    image: ghcr.io/wmo-im/wis2box-broker:latest
+    env_file:
+      - test.env
+    ports:
+      - "5883:1883"
+
+  elasticsearch:
+    container_name: wis2box-api-test-elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    environment:
+      - discovery.type=single-node
+      - discovery.seed_hosts=[]
+      - node.name=elasticsearch-01
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=es-wis2box
+      - xpack.security.enabled=false
+    mem_limit: 1.5g
+    memswap_limit: 1.5g
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 5s
+      retries: 100
+
+volumes:
+  pg_data:

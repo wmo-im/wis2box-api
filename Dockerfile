@@ -23,6 +23,10 @@ FROM wmoim/dim_eccodes_baseimage:2.34.0
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
+ENV CSV2BUFR_TEMPLATES=/root
+
+WORKDIR /root
+
 RUN apt-get update -y && apt-get install cron curl python3-pip git unzip -y
 # install gunicorn, gevent, gdal, elasticsearch
 RUN apt-get install -y --no-install-recommends \

@@ -48,8 +48,6 @@ def store_message(message, channel):
         # store message in current directory with filename
         with open(filename, 'w') as f:
             json.dump(message, f, indent=4)
-    else:
-        print(f'channel {message["channel"]} does not match {channel}')
 
 
 def transform_to_bufr(process_name: str,
@@ -117,6 +115,10 @@ def transform_to_bufr(process_name: str,
 
     # compare the received message with the expected message
     for key in ['channel', 'filename', 'data', '_meta']:
+        if message[key] != expected_message[key]:
+            print(f"Issue found for message['{key}']")
+            print(f' found: {message[key]}')
+            print(f' expected: {expected_message[key]}')
         assert message[key] == expected_message[key]
 
 
@@ -139,7 +141,7 @@ def test_synop2bufr():
         'messages published': 1,
         'data_items': [
             {
-                'data': 'QlVGUgABgAQAABYAAAAAAAAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3', # noqa
+                'data': 'QlVGUgABgAQAABYA/////wAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAVMABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIGxoaGBgAAAAAAAAAAAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AR////gJH///+T/x/+R/yf////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8A3Nzc3', # noqa
                 'filename': 'WIGOS_0-20000-0-64400_20230119T060000.bufr4',
                 '_meta': {
                     'id': 'WIGOS_0-20000-0-64400_20230119T060000',

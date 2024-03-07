@@ -23,6 +23,10 @@ FROM wmoim/dim_eccodes_baseimage:2.34.0
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
+ENV CSV2BUFR_TEMPLATES=/root
+
+WORKDIR /root
+
 RUN apt-get update -y && apt-get install cron curl python3-pip git unzip -y
 # install gunicorn, gevent, gdal, elasticsearch
 RUN apt-get install -y --no-install-recommends \
@@ -40,6 +44,12 @@ RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@ma
     https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.6.4.zip \
     https://github.com/wmo-im/synop2bufr/archive/main.zip
 
+RUN pywcmp bundle sync
+
+RUN mkdir -p /data && \ 
+    cd /data && \
+    curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
+
 # install csv2bufr templates
 RUN mkdir /opt/csv2bufr &&  \
     cd /opt/csv2bufr && \
@@ -50,6 +60,7 @@ RUN mkdir /opt/csv2bufr &&  \
 COPY . /app
 COPY wis2box_api/templates/admin /pygeoapi/pygeoapi/templates/admin
 COPY ./docker/pygeoapi-config.yml $PYGEOAPI_CONFIG
+
 #COPY ./docker/pygeoapi-openapi.yml $PYGEOAPI_OPENAPI
 
 RUN cd /app \

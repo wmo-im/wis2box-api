@@ -46,7 +46,9 @@ RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@ma
 
 RUN pywcmp bundle sync
 
-RUN curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
+RUN mkdir -p /data && \ 
+    cd /data && \
+    curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
 
 # install csv2bufr templates
 RUN mkdir /opt/csv2bufr &&  \

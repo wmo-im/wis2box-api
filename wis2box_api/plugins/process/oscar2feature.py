@@ -21,8 +21,6 @@
 
 import logging
 
-from iso3166 import countries
-
 from pyoscar import OSCARClient
 
 from pygeoapi.process.base import BaseProcessor
@@ -67,6 +65,7 @@ PROCESS_METADATA = {
 }
 
 OSCAR_STATION_URL = 'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/' # noqa
+
 
 class Oscar2FeatureProcessor(BaseProcessor):
 

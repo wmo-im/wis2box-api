@@ -68,25 +68,6 @@ PROCESS_METADATA = {
 
 OSCAR_STATION_URL = 'https://oscar.wmo.int/surface/#/search/station/stationReportDetails/' # noqa
 
-WMO_RAS = {
-    1: 'I',
-    2: 'II',
-    3: 'III',
-    4: 'IV',
-    5: 'V',
-    6: 'VI'
-}
-
-WMDR_RAS = {
-    'africa': 'I',
-    'asia': 'II',
-    'southAmerica': 'III',
-    'northCentralAmericaCaribbean': 'IV',
-    'southWestPacific': 'V',
-    'europe': 'VI'
-}
-
-
 class Oscar2FeatureProcessor(BaseProcessor):
 
     def __init__(self, processor_def):
@@ -137,22 +118,6 @@ class Oscar2FeatureProcessor(BaseProcessor):
         if ',' in station['wigos_station_identifier']:
             station['wigos_station_identifier'] = station['wigos_station_identifier'].split(',')[0] # noqa
 
-        territory_name = ''
-        t_name = station.get('territory_name', '')
-        if t_name not in [None, '']:
-            try:
-                territory_name = countries.get(t_name).name
-            except KeyError:
-                LOGGER.error(f'Country code {t_name} not found in ISO3166')
-
-        try:
-            wmo_region = WMO_RAS[station['wmo_region']]
-        except KeyError:
-            try:
-                wmo_region = WMDR_RAS[station['wmo_region']]
-            except KeyError:
-                wmo_region = ''
-
         tsi = ''
         if station['wigos_station_identifier'].startswith('0-20000'):
             tsi = station['wigos_station_identifier'].split('-')[-1]  # noqa
@@ -173,9 +138,9 @@ class Oscar2FeatureProcessor(BaseProcessor):
                 'wigos_station_identifier': wsi,
                 'traditional_station_identifier': tsi,
                 'facility_type': station.get('facility_type', ''),
-                'territory_name': territory_name,
+                'territory_name': station.get('territory_name', ''),
                 'barometer_height': station.get('barometer_height', ''),
-                'wmo_region': wmo_region,
+                'wmo_region': station.get('wmo_region', ''),
                 'url': OSCAR_STATION_URL+station.get('wigos_station_identifier', ''), # noqa
                 'topics': [],
                 'status': 'operational',

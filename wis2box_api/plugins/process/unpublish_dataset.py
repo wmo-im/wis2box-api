@@ -66,7 +66,7 @@ PROCESS_METADATA = {
     'example': {
         'inputs':
         {
-            'dataset_id': "urn:wmo:md:test-wis-node2:surface-based-observations.synop", # noqa
+            'metadata_id': "urn:wmo:md:test-wis-node2:surface-based-observations.synop", # noqa
         }
     }
 }

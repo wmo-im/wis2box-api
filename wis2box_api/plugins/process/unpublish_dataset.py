@@ -113,7 +113,7 @@ class UnpublishDatasetProcessor(BaseProcessor):
         response = requests.get(url)
         # when the collection does not exists the api returns a 404
         if response.status_code != 200:
-            status = f'Failed to find metadata: {metadata_id}, cannot unpublish'
+            status = f'Failed to find metadata: {metadata_id}, cannot unpublish' # noqa
             mimetype = 'application/json'
             outputs = {
                 'status': status

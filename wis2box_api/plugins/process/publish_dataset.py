@@ -195,7 +195,7 @@ class PublishDatasetProcessor(BaseProcessor):
             msg = 'metadata must have an id'
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
-        
+
         try:
             # create the message out of the metadata
             msg = metadata

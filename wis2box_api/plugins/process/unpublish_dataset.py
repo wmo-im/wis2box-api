@@ -19,7 +19,10 @@
 #
 ###############################################################################
 
+import json
 import logging
+import requests
+import time
 
 import paho.mqtt.publish as publish
 
@@ -29,7 +32,7 @@ from wis2box_api.wis2box.env import BROKER_HOST
 from wis2box_api.wis2box.env import BROKER_PORT
 from wis2box_api.wis2box.env import BROKER_USERNAME
 from wis2box_api.wis2box.env import BROKER_PASSWORD
-
+from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -95,12 +98,27 @@ class UnpublishDatasetProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
+        status = 'unknown'
+
         try:
             metadata_id = data['metadata_id']
+            force = data['force'] if 'force' in data else False
         except KeyError:
             msg = 'Missing required parameter: metadata_id'
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
+
+        # check that discovery-api/metadata/items/{metadata_id} exists
+        url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{metadata_id}?f=json' # noqa
+        response = requests.get(url)
+        # when the collection does not exists the api returns a 404
+        if response.status_code != 200:
+            status = f'Failed to find metadata: {metadata_id}, cannot unpublish'
+            mimetype = 'application/json'
+            outputs = {
+                'status': status
+            }
+            return mimetype, outputs
 
         try:
             # publish notification on internal broker
@@ -108,18 +126,51 @@ class UnpublishDatasetProcessor(BaseProcessor):
                 'username': BROKER_USERNAME,
                 'password': BROKER_PASSWORD
             }
-            publish.single(topic=f'wis2box/dataset/unpublication/{metadata_id}', # noqa
-                           payload=None,
+            msg = {
+                'metadata_id': metadata_id,
+                'force': force
+            }
+            topic = f'wis2box/dataset/unpublication/{metadata_id}'
+            publish.single(topic=topic, # noqa
+                           payload=json.dumps(msg),
                            qos=1,
                            retain=False,
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug('DataPublishRequest published')
+            LOGGER.debug(f'unpublish message sent: {metadata_id} force={force}') # noqa
         except Exception as e:
-            return f'Error publishing message: msg={msg}, error={e}'
+            status = f'Error publishing on topic={topic}, error={e}'
+        # sleep for a 1 second to allow the backend to process the message
+        time.sleep(1)
+        # check discovery-api/metadata/items/{metadata_id} does not exist
+        url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{metadata_id}?f=json' # noqa
+        response = requests.get(url)
+        if response.status_code == 200:
+            status = f'Failed to remove metadata: {metadata_id}'
+        else:
+            status = 'success'
 
-        status = 'success'
+        try:
+            # send a message to refresh the data mappings
+            private_auth = {
+                'username': BROKER_USERNAME,
+                'password': BROKER_PASSWORD
+            }
+            msg = {}
+            topic = 'wis2box/data_mappings/refresh'
+            publish.single(topic=topic,
+                           payload=json.dumps(msg),
+                           qos=1,
+                           retain=False,
+                           hostname=BROKER_HOST,
+                           port=int(BROKER_PORT),
+                           auth=private_auth)
+            LOGGER.debug('refresh data mappings message sent')
+        except Exception as e:
+            msg = f'Error publishing on topic={topic}, error={e}' # noqa
+            LOGGER.error(msg)
+
         mimetype = 'application/json'
         outputs = {
             'status': status

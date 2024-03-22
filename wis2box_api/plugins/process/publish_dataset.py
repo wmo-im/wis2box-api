@@ -21,6 +21,8 @@
 
 import json
 import logging
+import requests
+import time
 
 import paho.mqtt.publish as publish
 
@@ -30,6 +32,7 @@ from wis2box_api.wis2box.env import BROKER_HOST
 from wis2box_api.wis2box.env import BROKER_PORT
 from wis2box_api.wis2box.env import BROKER_USERNAME
 from wis2box_api.wis2box.env import BROKER_PASSWORD
+from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
 
 
 LOGGER = logging.getLogger(__name__)
@@ -172,6 +175,8 @@ class PublishDatasetProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
+        status = 'unknown'
+
         try:
             metadata = data['metadata']
         except KeyError:
@@ -179,6 +184,18 @@ class PublishDatasetProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
+        # check that metadata is a dict
+        if not isinstance(metadata, dict):
+            msg = 'metadata must be a json object'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+
+        # check that metadata has an id
+        if 'id' not in metadata:
+            msg = 'metadata must have an id'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+        
         try:
             # create the message out of the metadata
             msg = metadata
@@ -187,18 +204,49 @@ class PublishDatasetProcessor(BaseProcessor):
                 'username': BROKER_USERNAME,
                 'password': BROKER_PASSWORD
             }
-            publish.single(topic='wis2box/dataset/publication',
+            topic = 'wis2box/dataset/publication'
+            publish.single(topic=topic,
                            payload=json.dumps(msg),
                            qos=1,
                            retain=False,
                            hostname=BROKER_HOST,
                            port=int(BROKER_PORT),
                            auth=private_auth)
-            LOGGER.debug('DataPublishRequest published')
+            LOGGER.debug('dataset publish message sent')
         except Exception as e:
-            return f'Error publishing message: msg={msg}, error={e}'
+            status = f'Error publishing on topic={topic}, error={e}'
+        # sleep for a 1 second to allow the backend to process the message
+        time.sleep(1)
+        metadata_id = metadata['id'] if 'id' in metadata else 'unknown'
+        # check that discovery-api/metadata/items/{metadata_id} exists
+        url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{metadata_id}?f=json' # noqa
+        response = requests.get(url)
+        # when the collection does not exists the api returns a 404
+        if response.status_code != 200:
+            status = f'Status: {response.status_code}. Failed to create metadata with id={metadata_id}' # noqa
+        else:
+            status = 'success'
 
-        status = 'success'
+        try:
+            # send a message to refresh the data mappings
+            private_auth = {
+                'username': BROKER_USERNAME,
+                'password': BROKER_PASSWORD
+            }
+            msg = {}
+            topic = 'wis2box/data_mappings/refresh'
+            publish.single(topic=topic,
+                           payload=json.dumps(msg),
+                           qos=1,
+                           retain=False,
+                           hostname=BROKER_HOST,
+                           port=int(BROKER_PORT),
+                           auth=private_auth)
+            LOGGER.debug('refresh data mappings message sent')
+        except Exception as e:
+            msg = f'Error publishing on topic={topic}, error={e}' # noqa
+            LOGGER.error(msg)
+
         mimetype = 'application/json'
         outputs = {
             'status': status

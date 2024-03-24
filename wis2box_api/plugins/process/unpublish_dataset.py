@@ -38,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'unpublish_dataset',
+    'id': 'wis2box-unpublish_dataset',
     'title': 'Unpublish dataset',
     'description': 'Remove metadata and data-mappings in backend and send notification to unpublish metadata', # noqa
     'keywords': [],

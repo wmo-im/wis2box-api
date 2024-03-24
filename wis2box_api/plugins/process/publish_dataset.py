@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'publish_dataset',
+    'id': 'wis2box-publish_dataset',
     'title': 'Publish dataset',
     'description': 'Update metadata and data-mappings in backend and publish metadata-notification', # noqa
     'keywords': [],

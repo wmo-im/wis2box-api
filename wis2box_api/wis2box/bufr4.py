@@ -239,6 +239,7 @@ class ObservationDataBUFR():
         try:
             # get WSI
             if 1125 in descriptors:
+                LOGGER.debug("Reading WSI")
                 wsi_series = codes_get(subset,"#1#wigosIdentifierSeries")
                 LOGGER.debug(wsi_series)
                 wsi_issuer = codes_get(subset, "#1#wigosIssuerOfIdentifier")
@@ -252,8 +253,8 @@ class ObservationDataBUFR():
             # now TSI
             if all(x in descriptors for x in (1001, 1002)):  # noqa we have block and station
                 LOGGER.debug("Parsing block and station number")
-                block_number = codes_get(subset,"#1#blockNumber")
-                station_number = codes_get(subset,"#1#stationNumber")
+                block_number = codes_get(subset, "#1#blockNumber")
+                station_number = codes_get(subset, "#1#stationNumber")
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
             elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
                 LOGGER.debug("Callsign")
@@ -261,17 +262,17 @@ class ObservationDataBUFR():
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1003, 1020, 1005)):  # noqa wmo region, sub area and buoy number
                 LOGGER.debug("Parsing 5 digit buoy")
-                region = codes_get(subset,"#1#regionNumber")
-                sub_area = codes_get(subset,"#1#wmoRegionSubArea")
-                buoy_number = codes_get(subset,"#1#buoyOrPlatformIdentifier")
+                region = codes_get(subset, "#1#regionNumber")
+                sub_area = codes_get(subset, "#1#wmoRegionSubArea")
+                buoy_number = codes_get(subset, "#1#buoyOrPlatformIdentifier")
                 temp_tsi = f"{region:01d}{sub_area:01d}{buoy_number:03d}"
             elif all(x in descriptors for x in (1010)):  # noqa we have moored buoy, CMAN or other fixed sea station
                 LOGGER.debug("Parsing CMAN / moored buoy identifier")
-                callsign = codes_get(subset,"#1#stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
+                callsign = codes_get(subset, "#1#stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1087)):  # noqa we have 7 digit buoy number
                 LOGGER.debug("Parsing 7 digit buoy number")
-                buoy_number = codes_get(subset,"#1#marineObservingPlatformIdentifier")  # noqa
+                buoy_number = codes_get(subset, "#1#marineObservingPlatformIdentifier")  # noqa
                 temp_tsi = f"{buoy_number:07d}"
 
         except Exception as err:

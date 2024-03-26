@@ -8,3 +8,4 @@ paho-mqtt
 psycopg2
 pygeometa
 sqlalchemy==2.0.25
+pymetdecoder-wmo==0.1.14

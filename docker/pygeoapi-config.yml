@@ -130,6 +130,16 @@ resources:
         processor:
             name: wis2box_api.plugins.process.oscar2feature.Oscar2FeatureProcessor
 
+    wis2box-publish_dataset:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.publish_dataset.PublishDatasetProcessor
+
+    wis2box-unpublish_dataset:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.unpublish_dataset.UnpublishDatasetProcessor
+
     wis2box-synop2bufr:
       type: process
       processor:

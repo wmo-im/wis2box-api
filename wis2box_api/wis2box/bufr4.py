@@ -234,13 +234,14 @@ class ObservationDataBUFR():
 
         # get expanded sequence
         descriptors = codes_get_array(subset, "expandedDescriptors")
+        LOGGER.debug(descriptors)
         temp_wsi = None
         temp_tsi = None
         try:
             # get WSI
             if 1125 in descriptors:
                 LOGGER.debug("Reading WSI")
-                wsi_series = codes_get(subset,"#1#wigosIdentifierSeries")
+                wsi_series = codes_get(subset, "#1#wigosIdentifierSeries")
                 LOGGER.debug(wsi_series)
                 wsi_issuer = codes_get(subset, "#1#wigosIssuerOfIdentifier")
                 LOGGER.debug(wsi_issuer)
@@ -298,7 +299,7 @@ class ObservationDataBUFR():
             LOGGER.info(msg)
 
         try:
-            yyyy = codes_get(subset,"#1#year")
+            yyyy = codes_get(subset, "#1#year")
             mm = codes_get(subset, "#1#month")
             dd = codes_get(subset, "#1#day")
             HH = codes_get(subset, "#1#hour")

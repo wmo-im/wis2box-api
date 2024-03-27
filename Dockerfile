@@ -33,15 +33,13 @@ RUN apt-get install -y --no-install-recommends \
     libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix wget \
     && rm -rf /var/lib/apt/lists/*
 
-# install pygeoapi, pywcmp, pymetdecoder, synop2bufr, csv2bufr, bufr2geojson
+# install pygeoapi, pywcmp, bufr2geojson
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/main.zip \
     https://github.com/wmo-im/pywcmp/archive/master.zip \
     https://github.com/wmo-im/bufr2geojson/archive/main.zip \
-    https://github.com/wmo-cop/pyoscar/archive/master.zip \
-    https://github.com/wmo-im/synop2bufr/archive/main.zip
-# note: synop2bufr includes csv2bufr
+    https://github.com/wmo-cop/pyoscar/archive/master.zip
 
 RUN pywcmp bundle sync
 

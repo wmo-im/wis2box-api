@@ -70,7 +70,7 @@ def transform_to_bufr(process_name: str,
     headers['Prefer'] = 'respond-async'
     response = requests.post(url, headers=headers, json=data)
     headers_json = dict(response.headers)
-    assert response.status_code == 201, f'Aysnc response status code: {response.status_code}' # noqa
+    assert response.status_code == 201, f'Aysnc response status code: {response.status_code}'  # noqa
     # print(headers_json)
     if 'Location' not in headers_json:
         assert False, f'Location not in headers: {headers_json}'
@@ -89,7 +89,7 @@ def transform_to_bufr(process_name: str,
     response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
     response_json = response.json()
 
-    for key in ['result', 'messages transformed', 'messages published', 'errors', 'warnings']: # noqa
+    for key in ['result', 'messages transformed', 'messages published', 'errors', 'warnings']:  # noqa
         assert response_json[key] == expected_response[key]
 
     filename = data['inputs']['channel'].replace('/', '_') + '.json'

@@ -87,7 +87,7 @@ class ObservationDataBUFR():
         :returns: `list` of output data
         """
 
-        LOGGER.warning('Proccessing BUFR data')
+        LOGGER.info('Proccessing BUFR data')
 
         # FIXME: figure out how to pass a bytestring to ecCodes BUFR reader
         tmp = tempfile.NamedTemporaryFile()
@@ -157,12 +157,12 @@ class ObservationDataBUFR():
 
         # loop over the subsets, create a new message for each
         num_subsets = codes_get(bufr_in, 'numberOfSubsets')
-        LOGGER.warning(f'Found {num_subsets} subsets')
+        LOGGER.info(f'Found {num_subsets} subsets')
 
         for i in range(num_subsets):
             idx = i + 1
-            LOGGER.warning(f'Processing subset {idx}')
-            LOGGER.warning('Extracting subset')
+            LOGGER.info(f'Processing subset {idx}')
+            LOGGER.info('Extracting subset')
             codes_set(bufr_in, 'extractSubset', idx)
             codes_set(bufr_in, 'doExtractSubsets', 1)
             # copy the replication factors
@@ -185,7 +185,7 @@ class ObservationDataBUFR():
                     extended_replication_factors = []
                     LOGGER.error(e.__class__.__name__)
 
-            LOGGER.warning('Copying template BUFR')
+            LOGGER.info('Copying template BUFR')
             subset_out = codes_clone(TEMPLATE)
 
             # set the replication factors, this needs to be done before
@@ -206,7 +206,7 @@ class ObservationDataBUFR():
                 else:
                     codes_set(subset_out, k, v)
 
-            LOGGER.warning('Cloning subset to new message')
+            LOGGER.info('Cloning subset to new message')
             subset = codes_clone(bufr_in)
             self.transform_subset(subset, subset_out)
             codes_release(subset)
@@ -236,50 +236,36 @@ class ObservationDataBUFR():
         descriptors = codes_get_array(subset, "expandedDescriptors")
 
         # unpack
-        codes_set(subset,"unpack", True)
+        codes_set(subset, "unpack", True)
 
-        LOGGER.warning(descriptors)
         temp_wsi = None
         temp_tsi = None
         try:
             # get WSI
             if 1125 in descriptors:
-                LOGGER.warning("Reading WSI")
                 wsi_series = codes_get(subset, "wigosIdentifierSeries")
-                LOGGER.warning(wsi_series)
                 wsi_issuer = codes_get(subset, "wigosIssuerOfIdentifier")
-                LOGGER.warning(wsi_issuer)
                 wsi_issue_number = codes_get(subset, "wigosIssueNumber")
-                LOGGER.warning(wsi_issue_number)
                 wsi_local_identifier = codes_get(subset, "wigosLocalIdentifierCharacter")  # noqa
-                LOGGER.warning(wsi_local_identifier)
                 temp_wsi = f"{wsi_series}-{wsi_issuer}-{wsi_issue_number}-{wsi_local_identifier}"  # noqa
 
             # now TSI
             if all(x in descriptors for x in (1001, 1002)):  # noqa we have block and station
-                LOGGER.warning("Parsing block and station number")
                 block_number = codes_get(subset, "blockNumber")
-                LOGGER.warning(block_number)
                 station_number = codes_get(subset, "stationNumber")
-                LOGGER.warning(station_number)
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
-                LOGGER.warning(temp_tsi)
             elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
-                LOGGER.warning("Callsign")
                 callsign = codes_get(subset,"shipOrMobileLandStationIdentifier")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1003, 1020, 1005)):  # noqa wmo region, sub area and buoy number
-                LOGGER.warning("Parsing 5 digit buoy")
                 region = codes_get(subset, "regionNumber")
                 sub_area = codes_get(subset, "wmoRegionSubArea")
                 buoy_number = codes_get(subset, "buoyOrPlatformIdentifier")
                 temp_tsi = f"{region:01d}{sub_area:01d}{buoy_number:03d}"
             elif all(x in descriptors for x in (1010)):  # noqa we have moored buoy, CMAN or other fixed sea station
-                LOGGER.warning("Parsing CMAN / moored buoy identifier")
                 callsign = codes_get(subset, "stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1087)):  # noqa we have 7 digit buoy number
-                LOGGER.warning("Parsing 7 digit buoy number")
                 buoy_number = codes_get(subset, "marineObservingPlatformIdentifier")  # noqa
                 temp_tsi = f"{buoy_number:07d}"
 
@@ -288,15 +274,27 @@ class ObservationDataBUFR():
             warnings.append(err)
 
         try:
-            LOGGER.warning("Parsing location")
-            longitude = codes_get(subset, "longitude")
-            latitude = codes_get(subset, "latitude")
-            if CODES_MISSING_DOUBLE in (longitude, latitude):
+            if any(x in descriptors for x in (6001, 6002)):
+                longitude = codes_get(subset, "longitude")
+            else:
+                longitude = CODES_MISSING_DOUBLE
+            if any(x in descriptors for x in (5001, 5002)):
+                latitude = codes_get(subset, "latitude")
+            else:
+                latitude = CODES_MISSING_DOUBLE
+            if 7030 in descriptors:
+                elevation = codes_get(subset,"heightOfStationGroundAboveMeanSeaLevel")  # noqa
+            else:
+                elevation = CODES_MISSING_DOUBLE
+
+            if CODES_MISSING_DOUBLE in (longitude, latitude, elevation):
                 location = None
             else:
                 location = {
                     "type": "Point",
-                    "coordinates": [longitude, latitude]
+                    "coordinates": [round(longitude, 5),
+                                    round(latitude, 5),
+                                    round(elevation)]
                 }
             if location is None or None in location['coordinates']:
                 msg = 'Missing location in BUFR'
@@ -307,13 +305,20 @@ class ObservationDataBUFR():
             LOGGER.warning(msg)
 
         try:
-            LOGGER.warning("Parsing timestamp")
+            # the following should always be present
             yyyy = codes_get(subset, "year")
             mm = codes_get(subset, "month")
             dd = codes_get(subset, "day")
-            HH = codes_get(subset, "hour")
-            MM = codes_get(subset, "minute")
-            data_date = f"{yyyy}-{mm}-{dd}T{HH}:{MM}Z"
+            # for daily data the following may be missing, default to 0
+            if 4004 in descriptors:
+                HH = codes_get(subset, "hour")
+            else:
+                HH = 0
+            if 4005 in descriptors:
+                MM = codes_get(subset, "minute")
+            else:
+                MM = 0
+            data_date = f"{yyyy:04d}-{mm:02d}-{dd:02d}T{HH:02d}:{MM:02d}:00Z"
         except Exception:
             msg = f"Error parsing time from subset with wsi={temp_wsi}, skip this subset" # noqa
             errors.append(msg)
@@ -326,7 +331,7 @@ class ObservationDataBUFR():
         # now repack
         codes_set(subset, "pack", True)
 
-        LOGGER.warning(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
+        LOGGER.info(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)
         if wsi is None:
             msg = 'Station not in station list: '
@@ -339,7 +344,7 @@ class ObservationDataBUFR():
             return
 
         try:
-            LOGGER.warning('Copying wsi to BUFR')
+            LOGGER.info('Copying wsi to BUFR')
             [series, issuer, number, tsi] = wsi.split('-')
             codes_set(subset_out, 'wigosIdentifierSeries', int(series))
             codes_set(subset_out, 'wigosIssuerOfIdentifier', int(issuer))
@@ -369,7 +374,7 @@ class ObservationDataBUFR():
             rmk = f"WIGOS_{wsi}_{isodate_str}"
             LOGGER.info(f'Publishing with identifier: {rmk}')
 
-            LOGGER.warning('Writing bufr4')
+            LOGGER.info('Writing bufr4')
             try:
                 bufr4 = codes_get_message(subset_out)
             except Exception as err:
@@ -398,4 +403,3 @@ class ObservationDataBUFR():
                 'errors': errors,
                 'warnings': warnings
             })
-            LOGGER.warning(msg)

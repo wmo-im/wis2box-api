@@ -16,7 +16,16 @@ docker-compose up -d --build
 
 ## Run the tests
 
+First upload the stations:
+
+```bash
+docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection
+```
+
+Now run the tests
+```bash
 pytest -s ./tests/integration
+```
 
 ## Debug
 

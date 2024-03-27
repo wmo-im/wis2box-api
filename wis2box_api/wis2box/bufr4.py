@@ -263,6 +263,7 @@ class ObservationDataBUFR():
                 station_number = codes_get(subset, "stationNumber")
                 LOGGER.warning(station_number)
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
+                LOGGER.warning(temp_tsi)
             elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
                 LOGGER.warning("Callsign")
                 callsign = codes_get(subset,"shipOrMobileLandStationIdentifier")  # noqa
@@ -287,6 +288,7 @@ class ObservationDataBUFR():
             warnings.append(err)
 
         try:
+            LOGGER.warning("Parsing location")
             longitude = codes_get(subset, "longitude")
             latitude = codes_get(subset, "latitude")
             if CODES_MISSING_DOUBLE in (longitude, latitude):
@@ -302,7 +304,7 @@ class ObservationDataBUFR():
                 raise Exception(msg)
         except Exception as err:
             msg = f'Can not parse location from subset with wsi={temp_wsi}: {err}' # noqa
-            LOGGER.info(msg)
+            LOGGER.warning(msg)
 
         try:
             yyyy = codes_get(subset, "year")

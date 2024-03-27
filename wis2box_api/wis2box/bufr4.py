@@ -157,12 +157,12 @@ class ObservationDataBUFR():
 
         # loop over the subsets, create a new message for each
         num_subsets = codes_get(bufr_in, 'numberOfSubsets')
-        LOGGER.info(f'Found {num_subsets} subsets')
+        LOGGER.debug(f'Found {num_subsets} subsets')
 
         for i in range(num_subsets):
             idx = i + 1
-            LOGGER.info(f'Processing subset {idx}')
-            LOGGER.info('Extracting subset')
+            LOGGER.debug(f'Processing subset {idx}')
+            LOGGER.debug('Extracting subset')
             codes_set(bufr_in, 'extractSubset', idx)
             codes_set(bufr_in, 'doExtractSubsets', 1)
             # copy the replication factors
@@ -185,7 +185,7 @@ class ObservationDataBUFR():
                     extended_replication_factors = []
                     LOGGER.error(e.__class__.__name__)
 
-            LOGGER.info('Copying template BUFR')
+            LOGGER.debug('Copying template BUFR')
             subset_out = codes_clone(TEMPLATE)
 
             # set the replication factors, this needs to be done before
@@ -206,7 +206,7 @@ class ObservationDataBUFR():
                 else:
                     codes_set(subset_out, k, v)
 
-            LOGGER.info('Cloning subset to new message')
+            LOGGER.debug('Cloning subset to new message')
             subset = codes_clone(bufr_in)
             self.transform_subset(subset, subset_out)
             codes_release(subset)
@@ -298,11 +298,11 @@ class ObservationDataBUFR():
                 }
             if location is None or None in location['coordinates']:
                 msg = 'Missing location in BUFR'
-                LOGGER.info(msg)
+                LOGGER.debug(msg)
                 raise Exception(msg)
         except Exception as err:
             msg = f'Can not parse location from subset with wsi={temp_wsi}: {err}' # noqa
-            LOGGER.warning(msg)
+            LOGGER.info(msg)
 
         try:
             # the following should always be present
@@ -331,7 +331,7 @@ class ObservationDataBUFR():
         # now repack
         codes_set(subset, "pack", True)
 
-        LOGGER.info(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
+        LOGGER.debug(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)
         if wsi is None:
             msg = 'Station not in station list: '
@@ -344,7 +344,7 @@ class ObservationDataBUFR():
             return
 
         try:
-            LOGGER.info('Copying wsi to BUFR')
+            LOGGER.debug('Copying wsi to BUFR')
             [series, issuer, number, tsi] = wsi.split('-')
             codes_set(subset_out, 'wigosIdentifierSeries', int(series))
             codes_set(subset_out, 'wigosIssuerOfIdentifier', int(issuer))
@@ -372,9 +372,9 @@ class ObservationDataBUFR():
             isodate_str = isodate.strftime('%Y%m%dT%H%M%S')
 
             rmk = f"WIGOS_{wsi}_{isodate_str}"
-            LOGGER.info(f'Publishing with identifier: {rmk}')
+            LOGGER.debug(f'Publishing with identifier: {rmk}')
 
-            LOGGER.info('Writing bufr4')
+            LOGGER.debug('Writing bufr4')
             try:
                 bufr4 = codes_get_message(subset_out)
             except Exception as err:

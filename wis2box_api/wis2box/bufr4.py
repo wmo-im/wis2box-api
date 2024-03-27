@@ -234,6 +234,10 @@ class ObservationDataBUFR():
 
         # get expanded sequence
         descriptors = codes_get_array(subset, "expandedDescriptors")
+
+        # unpack
+        codes_set(subset,"unpack", True)
+
         LOGGER.warning(descriptors)
         temp_wsi = None
         temp_tsi = None
@@ -255,7 +259,9 @@ class ObservationDataBUFR():
             if all(x in descriptors for x in (1001, 1002)):  # noqa we have block and station
                 LOGGER.warning("Parsing block and station number")
                 block_number = codes_get(subset, "blockNumber")
+                LOGGER.warning(block_number)
                 station_number = codes_get(subset, "stationNumber")
+                LOGGER.warning(station_number)
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
             elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
                 LOGGER.warning("Callsign")
@@ -313,6 +319,9 @@ class ObservationDataBUFR():
                 'warnings': warnings
             })
             return
+
+        # now repack
+        codes_set(subset, "pack", True)
 
         LOGGER.debug(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)

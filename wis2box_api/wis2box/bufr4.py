@@ -241,39 +241,39 @@ class ObservationDataBUFR():
             # get WSI
             if 1125 in descriptors:
                 LOGGER.warning("Reading WSI")
-                wsi_series = codes_get(subset, "#1#wigosIdentifierSeries")
+                wsi_series = codes_get(subset, "wigosIdentifierSeries")
                 LOGGER.warning(wsi_series)
-                wsi_issuer = codes_get(subset, "#1#wigosIssuerOfIdentifier")
+                wsi_issuer = codes_get(subset, "wigosIssuerOfIdentifier")
                 LOGGER.warning(wsi_issuer)
-                wsi_issue_number = codes_get(subset, "#1#wigosIssueNumber")
+                wsi_issue_number = codes_get(subset, "wigosIssueNumber")
                 LOGGER.warning(wsi_issue_number)
-                wsi_local_identifier = codes_get(subset, "#1#wigosLocalIdentifierCharacter")  # noqa
+                wsi_local_identifier = codes_get(subset, "wigosLocalIdentifierCharacter")  # noqa
                 LOGGER.warning(wsi_local_identifier)
                 temp_wsi = f"{wsi_series}-{wsi_issuer}-{wsi_issue_number}-{wsi_local_identifier}"  # noqa
 
             # now TSI
             if all(x in descriptors for x in (1001, 1002)):  # noqa we have block and station
                 LOGGER.warning("Parsing block and station number")
-                block_number = codes_get(subset, "#1#blockNumber")
-                station_number = codes_get(subset, "#1#stationNumber")
+                block_number = codes_get(subset, "blockNumber")
+                station_number = codes_get(subset, "stationNumber")
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
             elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
                 LOGGER.warning("Callsign")
-                callsign = codes_get(subset,"#1#shipOrMobileLandStationIdentifier")  # noqa
+                callsign = codes_get(subset,"shipOrMobileLandStationIdentifier")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1003, 1020, 1005)):  # noqa wmo region, sub area and buoy number
                 LOGGER.warning("Parsing 5 digit buoy")
-                region = codes_get(subset, "#1#regionNumber")
-                sub_area = codes_get(subset, "#1#wmoRegionSubArea")
-                buoy_number = codes_get(subset, "#1#buoyOrPlatformIdentifier")
+                region = codes_get(subset, "regionNumber")
+                sub_area = codes_get(subset, "wmoRegionSubArea")
+                buoy_number = codes_get(subset, "buoyOrPlatformIdentifier")
                 temp_tsi = f"{region:01d}{sub_area:01d}{buoy_number:03d}"
             elif all(x in descriptors for x in (1010)):  # noqa we have moored buoy, CMAN or other fixed sea station
                 LOGGER.warning("Parsing CMAN / moored buoy identifier")
-                callsign = codes_get(subset, "#1#stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
+                callsign = codes_get(subset, "stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1087)):  # noqa we have 7 digit buoy number
                 LOGGER.warning("Parsing 7 digit buoy number")
-                buoy_number = codes_get(subset, "#1#marineObservingPlatformIdentifier")  # noqa
+                buoy_number = codes_get(subset, "marineObservingPlatformIdentifier")  # noqa
                 temp_tsi = f"{buoy_number:07d}"
 
         except Exception as err:
@@ -281,8 +281,8 @@ class ObservationDataBUFR():
             warnings.append(err)
 
         try:
-            longitude = codes_get(subset, "#1#longitude")
-            latitude = codes_get(subset, "#1#latitude")
+            longitude = codes_get(subset, "longitude")
+            latitude = codes_get(subset, "latitude")
             if CODES_MISSING_DOUBLE in (longitude, latitude):
                 location = None
             else:
@@ -299,11 +299,11 @@ class ObservationDataBUFR():
             LOGGER.info(msg)
 
         try:
-            yyyy = codes_get(subset, "#1#year")
-            mm = codes_get(subset, "#1#month")
-            dd = codes_get(subset, "#1#day")
-            HH = codes_get(subset, "#1#hour")
-            MM = codes_get(subset, "#1#minute")
+            yyyy = codes_get(subset, "year")
+            mm = codes_get(subset, "month")
+            dd = codes_get(subset, "day")
+            HH = codes_get(subset, "hour")
+            MM = codes_get(subset, "minute")
             data_date = f"{yyyy}-{mm}-{dd}T{HH}:{MM}Z"
         except Exception:
             msg = f"Error parsing time from subset with wsi={temp_wsi}, skip this subset" # noqa
@@ -329,10 +329,10 @@ class ObservationDataBUFR():
         try:
             LOGGER.debug('Copying wsi to BUFR')
             [series, issuer, number, tsi] = wsi.split('-')
-            codes_set(subset_out, '#1#wigosIdentifierSeries', int(series))
-            codes_set(subset_out, '#1#wigosIssuerOfIdentifier', int(issuer))
-            codes_set(subset_out, '#1#wigosIssueNumber', int(number))
-            codes_set(subset_out, '#1#wigosLocalIdentifierCharacter', tsi)
+            codes_set(subset_out, 'wigosIdentifierSeries', int(series))
+            codes_set(subset_out, 'wigosIssuerOfIdentifier', int(issuer))
+            codes_set(subset_out, 'wigosIssueNumber', int(number))
+            codes_set(subset_out, 'wigosLocalIdentifierCharacter', tsi)
             codes_bufr_copy_data(subset, subset_out)
 
             if location is None or None in location['coordinates']:
@@ -340,9 +340,9 @@ class ObservationDataBUFR():
                 warnings.append(msg)
                 location = self.stations.get_geometry(wsi)
                 long, lat, elev = location.get('coordinates')
-                codes_set(subset_out, '#1#longitude', long)
-                codes_set(subset_out, '#1#latitude', lat)
-                codes_set(subset_out, '#1#heightOfStationGroundAboveMeanSeaLevel', elev)  # noqa
+                codes_set(subset_out, 'longitude', long)
+                codes_set(subset_out, 'latitude', lat)
+                codes_set(subset_out, 'heightOfStationGroundAboveMeanSeaLevel', elev)  # noqa
 
             if '/' in data_date:
                 data_date = data_date.split('/')[1]

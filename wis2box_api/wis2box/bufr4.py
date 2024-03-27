@@ -87,7 +87,7 @@ class ObservationDataBUFR():
         :returns: `list` of output data
         """
 
-        LOGGER.debug('Proccessing BUFR data')
+        LOGGER.warning('Proccessing BUFR data')
 
         # FIXME: figure out how to pass a bytestring to ecCodes BUFR reader
         tmp = tempfile.NamedTemporaryFile()
@@ -157,12 +157,12 @@ class ObservationDataBUFR():
 
         # loop over the subsets, create a new message for each
         num_subsets = codes_get(bufr_in, 'numberOfSubsets')
-        LOGGER.debug(f'Found {num_subsets} subsets')
+        LOGGER.warning(f'Found {num_subsets} subsets')
 
         for i in range(num_subsets):
             idx = i + 1
-            LOGGER.debug(f'Processing subset {idx}')
-            LOGGER.debug('Extracting subset')
+            LOGGER.warning(f'Processing subset {idx}')
+            LOGGER.warning('Extracting subset')
             codes_set(bufr_in, 'extractSubset', idx)
             codes_set(bufr_in, 'doExtractSubsets', 1)
             # copy the replication factors
@@ -185,7 +185,7 @@ class ObservationDataBUFR():
                     extended_replication_factors = []
                     LOGGER.error(e.__class__.__name__)
 
-            LOGGER.debug('Copying template BUFR')
+            LOGGER.warning('Copying template BUFR')
             subset_out = codes_clone(TEMPLATE)
 
             # set the replication factors, this needs to be done before
@@ -206,7 +206,7 @@ class ObservationDataBUFR():
                 else:
                     codes_set(subset_out, k, v)
 
-            LOGGER.debug('Cloning subset to new message')
+            LOGGER.warning('Cloning subset to new message')
             subset = codes_clone(bufr_in)
             self.transform_subset(subset, subset_out)
             codes_release(subset)
@@ -307,6 +307,7 @@ class ObservationDataBUFR():
             LOGGER.warning(msg)
 
         try:
+            LOGGER.warning("Parsing timestamp")
             yyyy = codes_get(subset, "year")
             mm = codes_get(subset, "month")
             dd = codes_get(subset, "day")
@@ -325,7 +326,7 @@ class ObservationDataBUFR():
         # now repack
         codes_set(subset, "pack", True)
 
-        LOGGER.debug(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
+        LOGGER.warning(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)
         if wsi is None:
             msg = 'Station not in station list: '
@@ -338,7 +339,7 @@ class ObservationDataBUFR():
             return
 
         try:
-            LOGGER.debug('Copying wsi to BUFR')
+            LOGGER.warning('Copying wsi to BUFR')
             [series, issuer, number, tsi] = wsi.split('-')
             codes_set(subset_out, 'wigosIdentifierSeries', int(series))
             codes_set(subset_out, 'wigosIssuerOfIdentifier', int(issuer))
@@ -368,7 +369,7 @@ class ObservationDataBUFR():
             rmk = f"WIGOS_{wsi}_{isodate_str}"
             LOGGER.info(f'Publishing with identifier: {rmk}')
 
-            LOGGER.debug('Writing bufr4')
+            LOGGER.warning('Writing bufr4')
             try:
                 bufr4 = codes_get_message(subset_out)
             except Exception as err:
@@ -397,3 +398,4 @@ class ObservationDataBUFR():
                 'errors': errors,
                 'warnings': warnings
             })
+            LOGGER.warning(msg)

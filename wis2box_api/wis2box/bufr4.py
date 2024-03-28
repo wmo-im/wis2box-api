@@ -254,7 +254,7 @@ class ObservationDataBUFR():
                 block_number = codes_get(subset, "#1#blockNumber")
                 station_number = codes_get(subset, "#1#stationNumber")
                 temp_tsi = f"{block_number:02d}{station_number:03d}"
-            elif all(x in descriptors for x in (1011)):  # noqa we have ship callsign
+            elif all(x in descriptors for x in (1011,)):  # noqa we have ship callsign
                 callsign = codes_get(subset,"#1#shipOrMobileLandStationIdentifier")  # noqa
                 temp_tsi = callsign
             elif all(x in descriptors for x in (1003, 1020, 1005)):  # noqa wmo region, sub area and buoy number
@@ -262,10 +262,10 @@ class ObservationDataBUFR():
                 sub_area = codes_get(subset, "#1#wmoRegionSubArea")
                 buoy_number = codes_get(subset, "#1#buoyOrPlatformIdentifier")
                 temp_tsi = f"{region:01d}{sub_area:01d}{buoy_number:03d}"
-            elif all(x in descriptors for x in (1010)):  # noqa we have moored buoy, CMAN or other fixed sea station
+            elif all(x in descriptors for x in (1010,)):  # noqa we have moored buoy, CMAN or other fixed sea station
                 callsign = codes_get(subset, "#1#stationaryBuoyPlatformIdentifierEGCManBuoys")  # noqa
                 temp_tsi = callsign
-            elif all(x in descriptors for x in (1087)):  # noqa we have 7 digit buoy number
+            elif all(x in descriptors for x in (1087,)):  # noqa we have 7 digit buoy number
                 buoy_number = codes_get(subset, "#1#marineObservingPlatformIdentifier")  # noqa
                 temp_tsi = f"{buoy_number:07d}"
 

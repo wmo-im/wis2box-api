@@ -252,7 +252,7 @@ def test_bufr2bufr():
         'messages published': 1,
         'data_items': [
             {
-                'data': 'QlVGUgABAgQAABYAAFAAAAAAAAIAHAAH5gMVAAAAAAALAAABgMGWx1YAANUABOIAAAMTYzNDQAAAAAAAAAAAAAACCsJqenKiKpoaqpJ4AAAAAAAAAAAAAvzGqABiq+AldarlDSKJFBc//73w+6E0BQEAZDRftA7YAMgfQAZAAD//6YcwXPqFAIJkAuAf0HFAP////////////////////////////////////w4/0cj/4AH6AAAGQ/0AA////4BkP0QANV6/RAA0WoH0YJ/YmgZ/f2///7pgIBO///////f/////////gAAAB///////v/o/////w//ALJ7///w3Nzc3', # noqa
+                'data': 'QlVGUgABeAQAABYA/////wAAAAJuHgAH5wETBgAAAAALAAABgMGWx2AAAUsABOIAAANjQ0MDAAAAAAAAAAAAAAAIDIKCekpyoilqcnpKkigAAAAAAAAAAPzimYBA/78kmTlBBUCDB///////////////////////////+dUnxn1P///////////26vbYOl////////////////////////////////////////////////////////////////AACP/yP+T///////////////7///v9f/////////////////////////////////+J/b/gAff2/4Dz/X/////////////////////////////////////7+kAH//v6QANnH//////AAf/wAF+j//////////////v0f//////f//+/R/+////////////////////fo//////////////////3+oAP///////////////////8Nzc3Nw', # noqa
                 'filename': 'WIGOS_0-20000-0-16344_20220321T000000.bufr4',
                 '_meta': {
                     'id': 'WIGOS_0-20000-0-16344_20220321T000000',

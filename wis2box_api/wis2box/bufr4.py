@@ -287,7 +287,7 @@ class ObservationDataBUFR():
             else:
                 elevation = CODES_MISSING_DOUBLE
 
-            if CODES_MISSING_DOUBLE in (longitude, latitude, elevation):
+            if CODES_MISSING_DOUBLE in (longitude, latitude):
                 location = None
             else:
                 location = {

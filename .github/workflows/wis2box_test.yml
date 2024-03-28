@@ -44,8 +44,6 @@ jobs:
       - name: run integration tests ⚙️
         working-directory: docker_compose_test 
         run: |
-          export BUFR_ORIGINATING_CENTRE=0
-          export BUFR_ORIGINATING_SUBCENTRE=0
           pytest -s tests/integration
 
       - name: failed tests 🚩

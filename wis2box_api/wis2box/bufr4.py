@@ -293,9 +293,10 @@ class ObservationDataBUFR():
                 location = {
                     "type": "Point",
                     "coordinates": [round(longitude, 5),
-                                    round(latitude, 5),
-                                    round(elevation)]
+                                    round(latitude, 5)]
                 }
+                if elevation != CODES_MISSING_DOUBLE:
+                    location['coordinates'].append(round(elevation))
             if location is None or None in location['coordinates']:
                 msg = 'Missing location in BUFR'
                 LOGGER.info(msg)

@@ -302,8 +302,9 @@ class ObservationDataBUFR():
                 LOGGER.info(msg)
                 raise Exception(msg)
         except Exception as err:
-            msg = f'Can not parse location from subset with wsi={temp_wsi}: {err}' # noqa
+            msg = f'Can not parse location from subset with wsi={temp_wsi} (tsi={temp_tsi}): {err}' # noqa
             LOGGER.info(msg)
+        
 
         try:
             # the following should always be present
@@ -321,7 +322,7 @@ class ObservationDataBUFR():
                 MM = 0
             data_date = f"{yyyy:04d}-{mm:02d}-{dd:02d}T{HH:02d}:{MM:02d}:00Z"
         except Exception:
-            msg = f"Error parsing time from subset with wsi={temp_wsi}, skip this subset" # noqa
+            msg = f"Error parsing time from subset with wsi={temp_wsi} (tsi={temp_tsi}), skip this subset" # noqa
             errors.append(msg)
             self.output_items.append({
                 'errors': errors,
@@ -354,7 +355,7 @@ class ObservationDataBUFR():
             codes_bufr_copy_data(subset, subset_out)
 
             if location is None or None in location['coordinates']:
-                msg = 'Missing coordinates in BUFR, using coordinates from station metadata'  # noqa
+                msg = f'Missing coordinates for wsi={temp_wsi} (tsi={temp_tsi}, using coordinates from station metadata'  # noqa
                 warnings.append(msg)
                 location = self.stations.get_geometry(wsi)
                 long, lat, elev = location.get('coordinates')

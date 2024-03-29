@@ -304,7 +304,6 @@ class ObservationDataBUFR():
         except Exception as err:
             msg = f'Can not parse location from subset with wsi={temp_wsi} (tsi={temp_tsi}): {err}' # noqa
             LOGGER.info(msg)
-        
 
         try:
             # the following should always be present

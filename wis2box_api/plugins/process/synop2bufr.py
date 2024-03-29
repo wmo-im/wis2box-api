@@ -138,8 +138,8 @@ class SynopPublishProcessor(BaseProcessor):
         except Exception as err:
             return handle_error({err})
 
-        # initialize the Stations object at execute
-        stations = Stations()
+        # get the station metadata for the channel
+        stations = Stations(channel=channel)
         # get the station metadata as a CSV string
         metadata = stations.get_csv_string()
         if metadata is None:

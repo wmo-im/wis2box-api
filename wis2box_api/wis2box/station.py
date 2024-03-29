@@ -32,9 +32,9 @@ LOGGER = logging.getLogger(__name__)
 
 class Stations():
 
-    def __init__(self):
+    def __init__(self, channel: str = None):
         self.stations = {}
-        self._load_stations()
+        self._load_stations(channel=channel)
 
     def get_geometry(self, wsi: str) -> dict:
         """
@@ -140,7 +140,7 @@ class Stations():
         else:
             return None
 
-    def _load_stations(self):
+    def _load_stations(self, channel: str = None):
         """Load stations from API
 
         :returns: None
@@ -161,6 +161,7 @@ class Stations():
             while len(res['hits']['hits']) > 0:
                 res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=len(stations)) # noqa
                 for hit in res['hits']['hits']:
+                    LOGGER.info(f"station-data={hit['_source']}")
                     stations[hit['_source']['id']] = hit['_source']
         except Exception as err:
             LOGGER.error(f'Failed to load stations from backend: {err}')

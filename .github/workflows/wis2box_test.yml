@@ -32,6 +32,13 @@ jobs:
         run: |
           docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection
 
+      - name: associate stations to topics
+        working-directory: docker_compose_test
+        run: |
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-64400 synop/test
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-15015 csv/test
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-16344 bufr/test
+
       - name: Check status code API
         working-directory: docker_compose_test  
         run: |

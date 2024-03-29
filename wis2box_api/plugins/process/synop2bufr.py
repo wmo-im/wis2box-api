@@ -133,8 +133,9 @@ class SynopPublishProcessor(BaseProcessor):
         try:
             channel = data['channel']
             notify = data['notify']
-            # initialize the WIS2Publish object
-            data_handler = DataHandler(channel, notify)
+            metadata_id = data.get('metadata_id', None)
+            # initialize the DataHandler
+            data_handler = DataHandler(channel, notify, metadata_id=metadata_id)
         except Exception as err:
             return handle_error({err})
 

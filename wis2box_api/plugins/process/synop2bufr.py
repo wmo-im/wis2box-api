@@ -135,7 +135,9 @@ class SynopPublishProcessor(BaseProcessor):
             notify = data['notify']
             metadata_id = data.get('metadata_id', None)
             # initialize the DataHandler
-            data_handler = DataHandler(channel, notify, metadata_id=metadata_id)
+            data_handler = DataHandler(channel,
+                                       notify,
+                                       metadata_id=metadata_id)
         except Exception as err:
             return handle_error({err})
 

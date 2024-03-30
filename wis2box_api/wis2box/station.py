@@ -157,12 +157,15 @@ class Stations():
             if len(res['hits']['hits']) == 0:
                 LOGGER.debug('No stations found')
             for hit in res['hits']['hits']:
-                stations[hit['_source']['id']] = hit['_source']
-            while len(res['hits']['hits']) > 0:
-                res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=len(stations)) # noqa
-                for hit in res['hits']['hits']:
-                    LOGGER.info(f"station-data={hit['_source']}")
+                topics = hit['_source']['properties']['topics'] if 'topics' in hit['_source']['properties'] else []
+                if channel in [x.replace('origin/a/wis2/', '') for x in topics] : 
                     stations[hit['_source']['id']] = hit['_source']
+            next_batch = nbatch
+            while len(res['hits']['hits']) > 0:
+                res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=next_batch)
+                for hit in res['hits']['hits']:
+                    stations[hit['_source']['id']] = hit['_source']
+                next_batch += nbatch
         except Exception as err:
             LOGGER.error(f'Failed to load stations from backend: {err}')
 

@@ -32,12 +32,19 @@ jobs:
         run: |
           docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection
 
+      - name: publish datasets
+        working-directory: docker_compose_test
+        run: |
+          docker exec -t wis2box-api-test-wis2box-management wis2box dataset publish /data/wis2box/metadata/discovery/synop-test.yml
+          docker exec -t wis2box-api-test-wis2box-management wis2box dataset publish /data/wis2box/metadata/discovery/csv-test.yml
+          docker exec -t wis2box-api-test-wis2box-management wis2box dataset publish /data/wis2box/metadata/discovery/bufr-test.yml
+
       - name: associate stations to topics
         working-directory: docker_compose_test
         run: |
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-64400 synop/test
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-15015 csv/test
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-16344 bufr/test
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-64400 origin/a/wis2/synop-test/data/core/weather/surface-based-observations/synop
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-15015 origin/a/wis2/csv-test/data/core/weather/surface-based-observations/synop
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station add-topic --wsi 0-20000-0-16344 origin/a/wis2/bufr-test/data/core/weather/surface-based-observations/synop
 
       - name: Check status code API
         working-directory: docker_compose_test  

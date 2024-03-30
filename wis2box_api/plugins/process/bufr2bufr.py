@@ -129,7 +129,7 @@ class BufrPublishProcessor(BaseProcessor):
             encoded_data_bytes = base64_encoded_data.encode('utf-8')
             # Decode base64 encoded data
             input_bytes = base64.b64decode(encoded_data_bytes)
-            obs_bufr = ObservationDataBUFR(input_bytes)
+            obs_bufr = ObservationDataBUFR(input_bytes, channel)
             LOGGER.info(f'Size of input_bytes: {len(input_bytes)}')
         except Exception as err:
             return handle_error(f'bufr2bufr raised Exception: {err}') # noqa

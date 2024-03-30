@@ -135,7 +135,7 @@ class CSVPublishProcessor(BaseProcessor):
             # initialize the DataHandler
             data_handler = DataHandler(channel, notify, metadata_id=metadata_id)
             # get stations
-            stations = Stations()
+            stations = Stations(channel)
         except Exception as err:
             return handle_error({err})
 

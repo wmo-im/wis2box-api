@@ -64,7 +64,7 @@ HEADERS = ["edition", "masterTableNumber", "bufrHeaderCentre",
 class ObservationDataBUFR():
     """Oservation data in bufr format"""
 
-    def __init__(self, input_bytes: bytes) -> None:
+    def __init__(self, input_bytes: bytes, channel: str = None) -> None:
         """
         ObservationDataBufr initializer
 
@@ -74,7 +74,7 @@ class ObservationDataBUFR():
         """
 
         self.input_bytes = input_bytes
-        self.stations = Stations()
+        self.stations = Stations(channel)
         self.output_items = []
 
     # return an array of output data

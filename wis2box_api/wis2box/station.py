@@ -108,8 +108,11 @@ class Stations():
         csv_output = []
         for station in self.stations.values():
             wsi = station['properties']['wigos_station_identifier']
-            if '-' in wsi and len(wsi.split("-")) == 4:
-                tsi = wsi.split("-")[3]
+            tsi = None
+            if 'traditional_station_identifier' in station['properties']:
+                tsi = station['properties']['traditional_station_identifier']
+            elif '-' in wsi and len(wsi.split('-')) == 4:
+                tsi = wsi.split('-')[3]
             barometer_height = None
             if 'barometer_height' in station['properties']:
                 barometer_height = station['properties']['barometer_height']

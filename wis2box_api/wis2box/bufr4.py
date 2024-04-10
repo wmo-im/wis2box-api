@@ -64,7 +64,7 @@ HEADERS = ["edition", "masterTableNumber", "bufrHeaderCentre",
 class ObservationDataBUFR():
     """Oservation data in bufr format"""
 
-    def __init__(self, input_bytes: bytes) -> None:
+    def __init__(self, input_bytes: bytes, channel: str = None) -> None:
         """
         ObservationDataBufr initializer
 
@@ -74,7 +74,7 @@ class ObservationDataBUFR():
         """
 
         self.input_bytes = input_bytes
-        self.stations = Stations()
+        self.stations = Stations(channel)
         self.output_items = []
 
     # return an array of output data
@@ -302,7 +302,7 @@ class ObservationDataBUFR():
                 LOGGER.info(msg)
                 raise Exception(msg)
         except Exception as err:
-            msg = f'Can not parse location from subset with wsi={temp_wsi}: {err}' # noqa
+            msg = f'Can not parse location from subset with wsi={temp_wsi} (tsi={temp_tsi}): {err}' # noqa
             LOGGER.info(msg)
 
         try:
@@ -321,7 +321,7 @@ class ObservationDataBUFR():
                 MM = 0
             data_date = f"{yyyy:04d}-{mm:02d}-{dd:02d}T{HH:02d}:{MM:02d}:00Z"
         except Exception:
-            msg = f"Error parsing time from subset with wsi={temp_wsi}, skip this subset" # noqa
+            msg = f"Error parsing time from subset with wsi={temp_wsi} (tsi={temp_tsi}), skip this subset" # noqa
             errors.append(msg)
             self.output_items.append({
                 'errors': errors,
@@ -335,8 +335,7 @@ class ObservationDataBUFR():
         LOGGER.debug(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)
         if wsi is None:
-            msg = 'Station not in station list: '
-            msg += f'wsi={temp_wsi} tsi={temp_tsi}; skipping'
+            msg += f'Station {temp_wsi} (tsi={temp_tsi}) not in station list: '  # noqa
             errors.append(msg)
             self.output_items.append({
                 'errors': errors,
@@ -354,7 +353,7 @@ class ObservationDataBUFR():
             codes_bufr_copy_data(subset, subset_out)
 
             if location is None or None in location['coordinates']:
-                msg = 'Missing coordinates in BUFR, using coordinates from station metadata'  # noqa
+                msg = f'Missing coordinates for wsi={temp_wsi} (tsi={temp_tsi}, using coordinates from station metadata'  # noqa
                 warnings.append(msg)
                 location = self.stations.get_geometry(wsi)
                 long, lat, elev = location.get('coordinates')

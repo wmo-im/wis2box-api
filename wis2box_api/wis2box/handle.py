@@ -72,12 +72,13 @@ class SecureHashAlgorithms(Enum):
 
 class DataHandler():
 
-    def __init__(self, channel, notify):
+    def __init__(self, channel, notify, metadata_id=None):
         # remove leading and trailing slashes
         channel = channel.strip('/')
 
         self._notify = notify
         self._channel = channel.replace('origin/a/wis2/', '')
+        self.metadata_id = metadata_id
 
     def process_items(self, output_items: []):
         """Process output_items, store and publish them
@@ -201,6 +202,7 @@ class DataHandler():
             # create the message out of the data_item
             msg = {
                 'channel': data_item['channel'],
+                'metadata_id': self.metadata_id,
                 'data': data_item['data'],
                 'filename': data_item['filename'],
                 '_meta': data_item['_meta']

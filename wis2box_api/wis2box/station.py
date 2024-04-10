@@ -32,9 +32,9 @@ LOGGER = logging.getLogger(__name__)
 
 class Stations():
 
-    def __init__(self):
+    def __init__(self, channel: str = None):
         self.stations = {}
-        self._load_stations()
+        self._load_stations(channel=channel)
 
     def get_geometry(self, wsi: str) -> dict:
         """
@@ -108,8 +108,11 @@ class Stations():
         csv_output = []
         for station in self.stations.values():
             wsi = station['properties']['wigos_station_identifier']
-            if '-' in wsi and len(wsi.split("-")) == 4:
-                tsi = wsi.split("-")[3]
+            tsi = None
+            if 'traditional_station_identifier' in station['properties']:
+                tsi = station['properties']['traditional_station_identifier']
+            elif '-' in wsi and len(wsi.split('-')) == 4:
+                tsi = wsi.split('-')[3]
             barometer_height = None
             if 'barometer_height' in station['properties']:
                 barometer_height = station['properties']['barometer_height']
@@ -140,7 +143,7 @@ class Stations():
         else:
             return None
 
-    def _load_stations(self):
+    def _load_stations(self, channel: str = None):
         """Load stations from API
 
         :returns: None
@@ -157,11 +160,15 @@ class Stations():
             if len(res['hits']['hits']) == 0:
                 LOGGER.debug('No stations found')
             for hit in res['hits']['hits']:
-                stations[hit['_source']['id']] = hit['_source']
+                topics = hit['_source']['properties']['topics'] if 'topics' in hit['_source']['properties'] else [] # noqa
+                if channel in [x.replace('origin/a/wis2/', '') for x in topics]: # noqa
+                    stations[hit['_source']['id']] = hit['_source']
+            next_batch = nbatch
             while len(res['hits']['hits']) > 0:
-                res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=len(stations)) # noqa
+                res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=next_batch) # noqa
                 for hit in res['hits']['hits']:
                     stations[hit['_source']['id']] = hit['_source']
+                next_batch += nbatch
         except Exception as err:
             LOGGER.error(f'Failed to load stations from backend: {err}')
 

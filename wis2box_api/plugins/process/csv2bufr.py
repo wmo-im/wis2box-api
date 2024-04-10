@@ -131,10 +131,13 @@ class CSVPublishProcessor(BaseProcessor):
         try:
             channel = data['channel']
             notify = data['notify']
+            metadata_id = data.get('metadata_id', None)
             # initialize the DataHandler
-            data_handler = DataHandler(channel, notify)
+            data_handler = DataHandler(channel,
+                                       notify,
+                                       metadata_id=metadata_id)
             # get stations
-            stations = Stations()
+            stations = Stations(channel)
         except Exception as err:
             return handle_error({err})
 

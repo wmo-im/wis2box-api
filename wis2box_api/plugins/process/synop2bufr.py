@@ -133,13 +133,16 @@ class SynopPublishProcessor(BaseProcessor):
         try:
             channel = data['channel']
             notify = data['notify']
-            # initialize the WIS2Publish object
-            data_handler = DataHandler(channel, notify)
+            metadata_id = data.get('metadata_id', None)
+            # initialize the DataHandler
+            data_handler = DataHandler(channel,
+                                       notify,
+                                       metadata_id=metadata_id)
         except Exception as err:
             return handle_error({err})
 
-        # initialize the Stations object at execute
-        stations = Stations()
+        # get the station metadata for the channel
+        stations = Stations(channel=channel)
         # get the station metadata as a CSV string
         metadata = stations.get_csv_string()
         if metadata is None:
@@ -171,6 +174,7 @@ class SynopPublishProcessor(BaseProcessor):
                             errors.append(error)
                     if 'warnings' in item['_meta']['result']:
                         for warning in item['_meta']['result']['warnings']:
+                            warning.replace('station list file','station list') # noqa
                             warning.replace('not found in station file','not in station list; skipping') # noqa
                             warnings.append(warning)
                 item['warnings'] = warnings

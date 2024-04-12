@@ -335,7 +335,7 @@ class ObservationDataBUFR():
         LOGGER.debug(f'Processing temp_wsi: {temp_wsi}, temp_tsi: {temp_tsi}')
         wsi = self.stations.get_valid_wsi(wsi=temp_wsi, tsi=temp_tsi)
         if wsi is None:
-            msg += f'Station {temp_wsi} (tsi={temp_tsi}) not in station list: '  # noqa
+            msg = f'Station {temp_wsi} (tsi={temp_tsi}) not in station list: '  # noqa
             errors.append(msg)
             self.output_items.append({
                 'errors': errors,

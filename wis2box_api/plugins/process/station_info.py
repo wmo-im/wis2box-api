@@ -180,10 +180,14 @@ class StationInfoProcessor(BaseProcessor):
         else:
             outputs['value'] = fc
 
+        # filter by data_id keyword containing topic
         query_core = {
             'bool': {
                 'filter': [
                     {"range": {"properties.pubtime": {"gte": date_offset}}}
+                ],
+                'must': [
+                    {"wildcard": {"properties.data_id.keyword": f"*{topic.replace('origin/a/wis2/','')}*"}} # noqa
                 ]
             }
         }

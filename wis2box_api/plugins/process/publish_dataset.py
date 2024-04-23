@@ -24,7 +24,6 @@ import logging
 import requests
 import time
 
-import nh3
 import paho.mqtt.publish as publish
 
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError

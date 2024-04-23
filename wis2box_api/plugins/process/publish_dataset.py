@@ -24,6 +24,7 @@ import logging
 import requests
 import time
 
+import nh3
 import paho.mqtt.publish as publish
 
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
@@ -200,7 +201,7 @@ class PublishDatasetProcessor(BaseProcessor):
             # create the message out of the metadata
             msg = metadata
             # dump the message to a string and sanitize html
-            msg = json.dumps(msg).replace('<', '&lt;').replace('>', '&gt;')
+            msg = nh3.clean(json.dumps(msg))
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,

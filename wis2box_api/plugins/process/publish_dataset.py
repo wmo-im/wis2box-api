@@ -201,7 +201,7 @@ class PublishDatasetProcessor(BaseProcessor):
             # create the message out of the metadata
             msg = metadata
             # dump the message to a string and sanitize html
-            msg = nh3.clean(json.dumps(msg))
+            msg = json.dumps(msg).replace('<', '&lt;').replace('>', '&gt;')
             # publish notification on internal broker
             private_auth = {
                 'username': BROKER_USERNAME,
@@ -209,7 +209,7 @@ class PublishDatasetProcessor(BaseProcessor):
             }
             topic = 'wis2box/dataset/publication'
             publish.single(topic=topic,
-                           payload=json.dumps(msg),
+                           payload=msg,
                            qos=1,
                            retain=False,
                            hostname=BROKER_HOST,

@@ -183,7 +183,7 @@ class StationInfoProcessor(BaseProcessor):
         query_core = {
             'bool': {
                 'filter': [
-                    { "range": { "properties.pubtime": { "gte": date_offset }}}
+                    {"range": {"properties.pubtime": {"gte": date_offset}}}
                 ]
             }
         }
@@ -195,12 +195,12 @@ class StationInfoProcessor(BaseProcessor):
                 },
                 'aggs': {
                     'count': {
-                        'terms': {'field': 'properties.data_id.keyword', 'size': 64000}
+                        'terms': {'field': 'properties.data_id.keyword', 'size': 64000} # noqa
                     }
                 }
             }
         }
-        query = {'size': 0, 'query': query_core, 'aggs': query_agg}        
+        query = {'size': 0, 'query': query_core, 'aggs': query_agg}
         response = self.es.search(index='messages', **query)
         response_buckets = response['aggregations']['each']['buckets']
 

@@ -33,8 +33,8 @@ RUN apt-get install -y --no-install-recommends \
     libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix wget \
     && rm -rf /var/lib/apt/lists/*
 
-# install pygeoapi, pywcmp, bufr2geojson
-RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@master \
+# install pygeoapi 0.16.1, pywcmp, bufr2geojson
+RUN pip3 install --no-cache-dir pygeoapi==0.16.1 \
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/main.zip \
     https://github.com/wmo-im/pywcmp/archive/master.zip \

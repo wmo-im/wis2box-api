@@ -118,11 +118,6 @@ class StationInfoProcessor(BaseProcessor):
         host = os.environ['WIS2BOX_API_BACKEND_URL']
         self.es = Elasticsearch(host)
 
-        if not self.es.ping():
-            msg = 'Cannot connect to Elasticsearch'
-            LOGGER.error(msg)
-            raise ProcessorExecuteError(msg)
-
     def execute(self, data):
         """
         Execute Process
@@ -131,6 +126,11 @@ class StationInfoProcessor(BaseProcessor):
 
         :returns: 'application/json'
         """
+
+        if not self.es.ping():
+            msg = 'Cannot connect to Elasticsearch'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
 
         mimetype = 'application/json'
         outputs = {

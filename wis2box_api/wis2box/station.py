@@ -152,7 +152,8 @@ class Stations():
         LOGGER.info("Loading stations from backend")
 
         stations = {}
-
+        
+        channel = channel.replace('origin/a/wis2/', '')
         try:
             es = Elasticsearch(API_BACKEND_URL)
             nbatch = 50

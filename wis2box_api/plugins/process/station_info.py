@@ -144,7 +144,7 @@ class StationInfoProcessor(BaseProcessor):
             collection_id = data['collection']
             topic = 'notfound'
             # get the topic from the collection
-            url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{collection_id}',  # noqa
+            url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{collection_id}?f=json' # noqa
             response = requests.get(url)
             if response.status_code == 200 and 'wmo:topicHierarchy' in response.json()['properties']:  # noqa
                 topic = response.json()['properties']['wmo:topicHierarchy']
@@ -205,14 +205,14 @@ class StationInfoProcessor(BaseProcessor):
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-        if index != 'notfound':
-            response = self.es.search(index=index, **query)
-            response_buckets = response['aggregations']['each']['buckets']
+        index = collection_id.lower().replace(':', '-')
+        response = self.es.search(index=index, **query)
+        response_buckets = response['aggregations']['each']['buckets']
 
-            hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
+        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
 
-            for station in outputs['value']['features']:
-                station['properties']['num_obs'] = hits.get(station['id'], 0)
+        for station in outputs['value']['features']:
+            station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 

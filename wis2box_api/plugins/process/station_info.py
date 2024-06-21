@@ -25,7 +25,7 @@ import os
 import logging
 import requests
 
-from pygeoapi.util import yaml_load, get_path_basename
+from pygeoapi.util import yaml_load
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 from wis2box_api.wis2box.env import WIS2BOX_API_URL, WIS2BOX_DOCKER_API_URL

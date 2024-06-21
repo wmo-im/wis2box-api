@@ -65,3 +65,8 @@ jobs:
         if: ${{ failure() }}
         run: |
           docker-compose logs
+
+      - name: ZAP baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:4343/oapi'

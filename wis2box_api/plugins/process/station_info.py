@@ -23,11 +23,12 @@ from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch
 import os
 import logging
+import requests
 
 from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
-from wis2box_api.wis2box.env import WIS2BOX_API_URL
+from wis2box_api.wis2box.env import WIS2BOX_API_URL, WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -142,16 +143,14 @@ class StationInfoProcessor(BaseProcessor):
         try:
             collection_id = data['collection']
             topic = 'notfound'
-            index = 'notfound'
-            if collection_id in CONFIG['resources']:
-                collection_config = CONFIG['resources'][collection_id]
-                index_url = collection_config['providers'][0]['data']
-                index = get_path_basename(index_url)
-                # topic is index with . replace by /
-                topic = index.replace('.', '/')
-                # topic should start with origin/a/wis2
-                if topic.startswith('origin/a/wis2') is False:
-                    topic = 'origin/a/wis2/' + topic
+            # get the topic from the collection
+            url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{collection_id}',  # noqa
+            response = requests.get(url)
+            if response.status_code == 200 and 'wmo:topicHierarchy' in response.json()['properties']:  # noqa
+                topic = response.json()['properties']['wmo:topicHierarchy']
+            else:
+                LOGGER.error(f'Error getting topic for collection {collection_id}')
+                raise ProcessorExecuteError('Error getting topic for collection')
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)

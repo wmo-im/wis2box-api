@@ -149,8 +149,8 @@ class StationInfoProcessor(BaseProcessor):
             if response.status_code == 200 and 'wmo:topicHierarchy' in response.json()['properties']:  # noqa
                 topic = response.json()['properties']['wmo:topicHierarchy']
             else:
-                LOGGER.error(f'Error getting topic for collection {collection_id}')
-                raise ProcessorExecuteError('Error getting topic for collection')
+                LOGGER.error(f'Error getting topic for collection {collection_id}') # noqa
+                raise ProcessorExecuteError('Error getting topic for collection') # noqa
         except KeyError:
             msg = 'Collection id required'
             LOGGER.error(msg)

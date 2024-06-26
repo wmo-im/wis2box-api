@@ -180,14 +180,14 @@ class StationInfoProcessor(BaseProcessor):
         else:
             outputs['value'] = fc
 
+        # filter by data_id keyword containing topic
         query_core = {
             'bool': {
                 'filter': [
-                    {
-                        'range': {
-                            'properties.resultTime.raw': {'gte': date_offset}
-                        }
-                    }
+                    {"range": {"properties.pubtime": {"gte": date_offset}}}
+                ],
+                'must': [
+                    {"wildcard": {"properties.data_id.keyword": f"*{topic.replace('origin/a/wis2/','')}*"}} # noqa
                 ]
             }
         }
@@ -199,21 +199,19 @@ class StationInfoProcessor(BaseProcessor):
                 },
                 'aggs': {
                     'count': {
-                        'terms': {'field': 'reportId.raw', 'size': 64000}
+                        'terms': {'field': 'properties.data_id.keyword', 'size': 64000} # noqa
                     }
                 }
             }
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
+        response = self.es.search(index='messages', **query)
+        response_buckets = response['aggregations']['each']['buckets']
 
-        if index != 'notfound':
-            response = self.es.search(index=index, **query)
-            response_buckets = response['aggregations']['each']['buckets']
+        hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
 
-            hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa
-
-            for station in outputs['value']['features']:
-                station['properties']['num_obs'] = hits.get(station['id'], 0)
+        for station in outputs['value']['features']:
+            station['properties']['num_obs'] = hits.get(station['id'], 0)
 
         return mimetype, outputs
 

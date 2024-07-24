@@ -25,7 +25,7 @@ import os
 import logging
 import requests
 
-from pygeoapi.util import yaml_load
+from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 from wis2box_api.wis2box.env import WIS2BOX_API_URL, WIS2BOX_DOCKER_API_URL
@@ -162,6 +162,18 @@ class StationInfoProcessor(BaseProcessor):
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
+        # determine the index to query from pygeoapi config
+        index = 'notfound'
+        if collection_id in CONFIG['resources']:
+            collection_config = CONFIG['resources'][collection_id]
+            index_url = collection_config['providers'][0]['data']
+            index = get_path_basename(index_url)
+
+        if index == 'notfound':
+            msg = 'Error determining index to query'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+
         days = data.get('days', 1) + (data.get('years', 0) * 365)
         _time_delta = timedelta(days=days, minutes=59, seconds=59)
         date_offset = (datetime.utcnow() - _time_delta).isoformat()
@@ -205,8 +217,12 @@ class StationInfoProcessor(BaseProcessor):
         }
         query = {'size': 0, 'query': query_core, 'aggs': query_agg}
 
-        index = collection_id.lower().replace(':', '-')
-        response = self.es.search(index=index, **query)
+        try:
+            response = self.es.search(index=index, **query)
+        except Exception as err:
+            msg = f'Error querying Elasticsearch with index={index}: {err}'
+            raise ProcessorExecuteError(err)
+
         response_buckets = response['aggregations']['each']['buckets']
 
         hits = {b['key']: len(b['count']['buckets']) for b in response_buckets} # noqa

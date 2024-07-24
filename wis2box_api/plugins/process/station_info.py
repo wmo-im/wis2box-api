@@ -168,7 +168,7 @@ class StationInfoProcessor(BaseProcessor):
             collection_config = CONFIG['resources'][collection_id]
             index_url = collection_config['providers'][0]['data']
             index = get_path_basename(index_url)
-        
+
         if index == 'notfound':
             msg = 'Error determining index to query'
             LOGGER.error(msg)

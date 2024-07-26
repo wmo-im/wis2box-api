@@ -40,10 +40,9 @@ with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
 
 PROCESS_DEF = {
     'version': '0.1.0',
-    'id': 'station-info',
-    'title': 'Station Information',
-    'description': 'Returns the station feature collection with'
-    ' counted observations by station',
+    'id': 'dataset-info',
+    'title': 'Dataset Information',
+    'description': 'Returns information collected about the dataset, such as notifications and errors in the last 24 hours',
     'keywords': [],
     'links': [],
     'inputs': {
@@ -58,30 +57,7 @@ PROCESS_DEF = {
             'minOccurs': 1,
             'maxOccurs': 1,
             'metadata': None  # TODO how to use?
-        },
-        'wigos_station_identifier': {
-            'title': {'en': 'WIGOS Station Identifier'},
-            'schema': {
-                'type': 'array',
-                'minItems': 1,
-                'items': {'type': 'string'}
-            },
-            'minOccurs': 0,
-            'maxOccurs': 1,
-            'metadata': None  # TODO how to use?
-        },
-        'days': {
-            'title': {'en': 'Days'},
-            'schema': {'type': 'number', 'default': 1},
-            'minOccurs': 0,
-            'maxOccurs': 1
-        },
-        'years': {
-            'title': {'en': 'Years'},
-            'schema': {'type': 'number', 'default': 0},
-            'minOccurs': 0,
-            'maxOccurs': 1
-        },
+        }
     },
     'outputs': {
         'dataset_info': {

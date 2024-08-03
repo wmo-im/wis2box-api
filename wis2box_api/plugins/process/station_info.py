@@ -32,10 +32,6 @@ from wis2box_api.wis2box.env import WIS2BOX_API_URL, WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
-with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
-
-
 PROCESS_DEF = {
     'version': '0.1.0',
     'id': 'station-info',
@@ -140,6 +136,15 @@ class StationInfoProcessor(BaseProcessor):
             'value': None,
         }
 
+        # load the api_config at execution time, in case it has changed
+        api_config = None
+        with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+            api_config = yaml_load(fh)
+        if api_config is None:
+            msg = 'Error loading pygeoapi config'
+            LOGGER.error(msg)
+            raise ProcessorExecuteError(msg)
+
         try:
             collection_id = data['collection']
             topic = 'notfound'
@@ -164,8 +169,8 @@ class StationInfoProcessor(BaseProcessor):
 
         # determine the index to query from pygeoapi config
         index = 'notfound'
-        if collection_id in CONFIG['resources']:
-            collection_config = CONFIG['resources'][collection_id]
+        if collection_id in api_config['resources']:
+            collection_config = api_config['resources'][collection_id]
             index_url = collection_config['providers'][0]['data']
             index = get_path_basename(index_url)
 
@@ -178,7 +183,7 @@ class StationInfoProcessor(BaseProcessor):
         _time_delta = timedelta(days=days, minutes=59, seconds=59)
         date_offset = (datetime.utcnow() - _time_delta).isoformat()
 
-        if CONFIG['resources'].get('stations') is None:
+        if api_config['resources'].get('stations') is None:
             msg = 'stations collection does not exist'
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)

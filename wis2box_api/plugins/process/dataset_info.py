@@ -19,30 +19,30 @@
 #
 ###############################################################################
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from elasticsearch import Elasticsearch
 
-import json
 import os
+import minio
 import logging
 import requests
 
-from pygeoapi.util import yaml_load
+
+from pygeoapi.util import yaml_load, get_path_basename
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
-with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-    CONFIG = yaml_load(fh)
-
+STORAGE_PUBLIC = os.getenv('WIS2BOX_STORAGE_PUBLIC')
+STORAGE_INCOMING = os.getenv('WIS2BOX_STORAGE_INCOMING')
 
 PROCESS_DEF = {
     'version': '0.1.0',
     'id': 'dataset-info',
     'title': 'Dataset Information',
-    'description': 'Returns information collected about the dataset, such as notifications and errors in the last 24 hours',
+    'description': 'Retrieve information about datasets contained in the WIS2BOX', # noqa
     'keywords': [],
     'links': [],
     'inputs': {
@@ -93,14 +93,35 @@ class DatasetInfoProcessor(BaseProcessor):
 
         super().__init__(processor_def, PROCESS_DEF)
 
-        host = os.environ['WIS2BOX_API_BACKEND_URL']
-
-        self.es = Elasticsearch(host)
-
+        es_host = os.environ['WIS2BOX_API_BACKEND_URL']
+        self.es = Elasticsearch(es_host)
         if not self.es.ping():
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
-            raise ProcessorExecuteError(msg)
+            self.es = None
+
+        storage_url = os.getenv('WIS2BOX_STORAGE_SOURCE')
+        access_key = os.getenv('WIS2BOX_STORAGE_USERNAME')
+        secret_key = os.getenv('WIS2BOX_STORAGE_PASSWORD')
+
+        is_secure = False
+        s3_endpoint = None
+        if storage_url.startswith('https://'):
+            is_secure = True
+            s3_endpoint = storage_url.replace('https://', '')
+        else:
+            s3_endpoint = storage_url.replace('http://', '')
+
+        try:
+            self.minio_client = minio.Minio(
+                s3_endpoint,
+                access_key=access_key,
+                secret_key=secret_key,
+                secure=is_secure
+            )
+        except Exception as err:
+            LOGGER.error(f'Error connecting to MinIO: {err}')
+            self.minio_client = None
 
     def execute(self, data):
         """
@@ -113,106 +134,150 @@ class DatasetInfoProcessor(BaseProcessor):
 
         mimetype = 'application/json'
 
-        dataset_info = {
-            'status': 'Unknown',
-            'msg_last_24hrs': None,
-            'errors_last_24hours': None
-        }
-
-        try:
-            collection_id = data['collection']
-            topic = 'notfound'
-            # get the topic from the collection
-            url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{collection_id}?f=json' # noqa
-            response = requests.get(url)
-            if response.status_code == 200 and 'wmo:topicHierarchy' in response.json()['properties']:  # noqa
-                topic = response.json()['properties']['wmo:topicHierarchy']
-            else:
-                LOGGER.error(f'Error getting topic for collection {collection_id}') # noqa
-                raise ProcessorExecuteError('Error getting topic for collection') # noqa
-        except KeyError:
-            msg = 'Collection id required'
+        # load the api_config at execution time (in case it has changed)
+        api_config = None
+        with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+            api_config = yaml_load(fh)
+        if api_config is None:
+            msg = 'Error loading pygeoapi config'
             LOGGER.error(msg)
             raise ProcessorExecuteError(msg)
 
+        dataset_info = {}
+
+        collection_id = data['collection'] if 'collection' in data else None
+
+        # loop over all metadata items and optionally filter by collection
+        try:
+            url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items?f=json' # noqa
+            response = requests.get(url)
+            if response.status_code == 200:
+                for item in response.json()['features']:
+                    key = item['properties']['identifier']
+                    if collection_id is None or collection_id == key:
+                        # find index in api_config
+                        index = 'notfound'
+                        if key in api_config['resources']:
+                            collection_config = api_config['resources'][key]
+                            index_url = collection_config['providers'][0]['data'] # noqa
+                            index = get_path_basename(index_url)
+                        # fill dataset_info dict
+                        dataset_info[key] = {
+                            'topic': item['properties']['wmo:topicHierarchy'],
+                            'files_incoming_24hrs': 0,
+                            'files_public_24hrs': 0,
+                            'timestamp_last_incoming': None,
+                            'timestamp_last_public': None,
+                            'es_index': index,
+                            'es_status': None
+                        }
+            else:
+                LOGGER.error(f'Error getting collection list: {response.text}')
+                raise ProcessorExecuteError('Error getting collection list')
+        except Exception as err:
+            LOGGER.error(f'Error getting collection list: {err}')
+            raise ProcessorExecuteError('Error getting collection list')
+
         # define date offset
-        days = data.get('days', 1) + (data.get('years', 0) * 365)
-        _time_delta = timedelta(days=days, minutes=59, seconds=59)
-        date_min_24hrs = (datetime.utcnow() - _time_delta).isoformat()
+        now_minus_24hrs = datetime.now(timezone.utc) - timedelta(hours=24)
+        if self.minio_client is not None:
+            incoming_bucket_info = self._get_bucket_info(STORAGE_INCOMING, now_minus_24hrs) # noqa
+            public_bucket_info = self._get_bucket_info(STORAGE_PUBLIC, now_minus_24hrs) # noqa
 
-        # prepare es query
-        query_core = {
-            'bool': {
-                'filter': [
-                    {"range": {"properties.pubtime": {"gte": date_min_24hrs}}}
-                ],
-                'must': [
-                    {"wildcard": {"properties.data_id.keyword": f"*{topic.replace('origin/a/wis2/','')}*"}} # noqa
-                ]
-            }
-        }
-        query_agg = {
-            'each': {
-                'terms': {
-                    'field': 'properties.data_id.keyword',
-                    'size': 64000
-                },
-                'aggs': {
-                    'count': {
-                        'terms': {'field': 'properties.data_id.keyword', 'size': 64000} # noqa
-                    }
-                }
-            }
-        }
-        query = {'size': 0, 'query': query_core, 'aggs': query_agg}
-        response = self.es.search(index='messages', **query)
-
-        # get count result from elastic search query response
-        dataset_info['msg_last_24hrs'] = response['hits']['total']['value']
-
-        # query loki for errors
-        loki_base_url = "http://loki:3100"
-        query = '{container_name="wis2box-management"} |~ "ERROR"'
-        now_utc = datetime.now(datetime.UTC)
-        current_time = now_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-        start_time = now_utc - timedelta(hours=24).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
-        end_time = current_time
-
-        result = self.query_loki(loki_base_url, query, start_time, end_time)
-        if result:
-            dataset_info['errors_last_24hours'] = len(result['data']['result'])
-        else:
-            dataset_info['errors_last_24hours'] = 0
+        for c_id in dataset_info:
+            topic = (dataset_info[c_id]['topic']).replace('origin/a/wis2/', '')
+            if c_id in incoming_bucket_info or topic in incoming_bucket_info:
+                dataset_info[c_id]['files_incoming_24hrs'] = incoming_bucket_info[c_id]['files_last24hrs'] # noqa
+                dataset_info[c_id]['timestamp_last_incoming'] = incoming_bucket_info[c_id]['last_timestamp'] # noqa
+            if c_id in public_bucket_info or topic in public_bucket_info:
+                dataset_info[c_id]['files_public_24hrs'] = public_bucket_info[c_id]['files_last24hrs'] # noqa
+                dataset_info[c_id]['timestamp_last_public'] = public_bucket_info[c_id]['last_timestamp'] # noqa
+            if dataset_info[c_id]['timestamp_last_incoming'] is not None:
+                dataset_info[c_id]['timestamp_last_incoming'] = dataset_info[c_id]['timestamp_last_incoming'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
+            if dataset_info[c_id]['timestamp_last_public'] is not None:
+                dataset_info[c_id]['timestamp_last_public'] = dataset_info[c_id]['timestamp_last_public'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
+            if self.es is not None and index != 'notfound':
+                dataset_info[c_id]['es_status'] = self._get_es_index_info(dataset_info[c_id]['index']) # noqa
+            continue
         outputs = {
             'dataset_info': dataset_info
         }
         return mimetype, outputs
 
-    def query_loki(base_url, query, start_time, end_time):
-        endpoint = f"{base_url}/loki/api/v1/query_range"
-        payload = {
-            "query": query,
-            "start": start_time,
-            "end": end_time
-        }
-        headers = {
-            "Accept": "application/json",
-            "X-Scope-OrgID": "1"  # Adjust as per your Loki setup
-        }
+    def _get_es_index_info(self, index):
+        """
+        Get information about an Elasticsearch index
+
+        :param index: index
+
+        :returns: dict with info
+        """
+
+        my_dict = {}
+
+        if self.es is None:
+            return my_dict
+
         try:
-            response = requests.get(endpoint, params=payload, headers=headers)
-            if response.status_code == 200:
-                try:
-                    json_response = response.json()
-                    return json_response
-                except json.JSONDecodeError:
-                    LOGGER.error("Loki returned a 200 status, but response is not valid JSON") # noqa
+            # Retrieve the index settings
+            settings = self.es.indices.get_settings(index=index)
+            # Extract the 'read_only_allow_delete' setting
+            read_only_allow_delete = settings[index]["settings"]["index"].get("blocks.read_only_allow_delete", "false") # noqa
+            # Retrieve the index stats
+            stats = self.es.indices.stats(index=index)
+            # Extract the 'total' document counts
+            total_docs = stats["_all"]["primaries"]["docs"]["count"]
+            # extract failed index count
+            index_failed = stats["_all"]["primaries"]["indexing"]["index_failed"] # noqa
+            # extract the total size of the index
+            total_size = stats["_all"]["primaries"]["store"]["size_in_bytes"]
+            # fill the dictionary
+            my_dict = {
+                'total_docs': total_docs,
+                'total_size': total_size,
+                'index_failed': index_failed,
+                'read_only_allow_delete': read_only_allow_delete
+            }
+        except Exception as err:
+            LOGGER.error(f'Error getting index info: {err}')
+
+        return my_dict
+
+    def _get_bucket_info(self, bucket_name, now_minus_24hrs):
+        """"
+        Analyze the content of the wis2box-public bucket in MinIO
+
+        :param collection_id: collection_id
+
+        :returns: dict with info
+        """
+
+        my_dict = {}
+        for object in self.minio_client.list_objects(bucket_name, '', True):
+            obj_name = object.object_name
+            dataset_id = ''
+            if bucket_name == STORAGE_PUBLIC:
+                if 'wis/' not in obj_name:
+                    continue
+                dataset_id = obj_name.split('wis/')[1]
+                dataset_id = dataset_id.replace(dataset_id.split('/')[-1],'')[:-2] # noqa
             else:
-                LOGGER.error(f"Received non-200 status code. Response text: {response.text[:500]}") # noqa
-                return None
-        except requests.exceptions.RequestException as e:
-            print(f"Request Exception: {e}")
-            return None
+                dataset_id = obj_name.split('/')[0]
+            if dataset_id not in my_dict:
+                nfiles = 0
+                if object.last_modified > now_minus_24hrs:
+                    nfiles = 1
+                my_dict[dataset_id] = {
+                    'files_last24hrs': nfiles,
+                    'last_timestamp': object.last_modified
+                }
+            else:
+                if object.last_modified > now_minus_24hrs:
+                    my_dict[dataset_id]['files_last24hrs'] += 1
+                if object.last_modified > my_dict[dataset_id]['last_timestamp']: # noqa
+                    my_dict[dataset_id]['last_timestamp'] = object.last_modified # noqa
+        # return the dictionary
+        return my_dict
 
     def __repr__(self):
-        return '<DatasetInfoProcessor> {}'.format(self.name)
+        return '<DatasetInfoProcessor> {}'.format(self.name) # noqa

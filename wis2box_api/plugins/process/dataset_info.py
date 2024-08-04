@@ -188,11 +188,13 @@ class DatasetInfoProcessor(BaseProcessor):
             topic = (dataset_info[c_id]['topic']).replace('origin/a/wis2/', '')
             es_index = dataset_info[c_id]['es_index']
             if c_id in incoming_bucket_info or topic in incoming_bucket_info:
-                dataset_info[c_id]['files_incoming_24hrs'] = incoming_bucket_info[c_id]['files_last24hrs'] # noqa
-                dataset_info[c_id]['timestamp_last_incoming'] = incoming_bucket_info[c_id]['last_timestamp'] # noqa
+                key = c_id if c_id in incoming_bucket_info else topic
+                dataset_info[c_id]['files_incoming_24hrs'] = incoming_bucket_info[key]['files_last24hrs'] # noqa
+                dataset_info[c_id]['timestamp_last_incoming'] = incoming_bucket_info[key]['last_timestamp'] # noqa
             if c_id in public_bucket_info or topic in public_bucket_info:
-                dataset_info[c_id]['files_public_24hrs'] = public_bucket_info[c_id]['files_last24hrs'] # noqa
-                dataset_info[c_id]['timestamp_last_public'] = public_bucket_info[c_id]['last_timestamp'] # noqa
+                key = c_id if c_id in public_bucket_info else topic
+                dataset_info[c_id]['files_public_24hrs'] = public_bucket_info[key]['files_last24hrs'] # noqa
+                dataset_info[c_id]['timestamp_last_public'] = public_bucket_info[key]['last_timestamp'] # noqa
             if dataset_info[c_id]['timestamp_last_incoming'] is not None:
                 dataset_info[c_id]['timestamp_last_incoming'] = dataset_info[c_id]['timestamp_last_incoming'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
             if dataset_info[c_id]['timestamp_last_public'] is not None:
@@ -261,9 +263,9 @@ class DatasetInfoProcessor(BaseProcessor):
                 if 'wis/' not in obj_name:
                     continue
                 dataset_id = obj_name.split('wis/')[1]
-                dataset_id = dataset_id.replace(dataset_id.split('/')[-1],'')[:-2] # noqa
+                dataset_id = dataset_id.replace(dataset_id.split('/')[-1],'')[:-1] # noqa
             else:
-                dataset_id = obj_name.split('/')[0]
+                dataset_id = obj_name.replace(obj_name.split('/')[-1], '')[:-1]
             if dataset_id not in my_dict:
                 nfiles = 0
                 if object.last_modified > now_minus_24hrs:

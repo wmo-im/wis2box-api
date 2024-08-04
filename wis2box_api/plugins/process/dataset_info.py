@@ -186,6 +186,7 @@ class DatasetInfoProcessor(BaseProcessor):
 
         for c_id in dataset_info:
             topic = (dataset_info[c_id]['topic']).replace('origin/a/wis2/', '')
+            es_index = dataset_info[c_id]['es_index']
             if c_id in incoming_bucket_info or topic in incoming_bucket_info:
                 dataset_info[c_id]['files_incoming_24hrs'] = incoming_bucket_info[c_id]['files_last24hrs'] # noqa
                 dataset_info[c_id]['timestamp_last_incoming'] = incoming_bucket_info[c_id]['last_timestamp'] # noqa
@@ -196,8 +197,8 @@ class DatasetInfoProcessor(BaseProcessor):
                 dataset_info[c_id]['timestamp_last_incoming'] = dataset_info[c_id]['timestamp_last_incoming'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
             if dataset_info[c_id]['timestamp_last_public'] is not None:
                 dataset_info[c_id]['timestamp_last_public'] = dataset_info[c_id]['timestamp_last_public'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
-            if self.es is not None and index != 'notfound':
-                dataset_info[c_id]['es_status'] = self._get_es_index_info(dataset_info[c_id]['index']) # noqa
+            if self.es is not None and es_index != 'notfound':
+                dataset_info[c_id]['es_status'] = self._get_es_index_info(es_index) # noqa
             continue
         outputs = {
             'dataset_info': dataset_info

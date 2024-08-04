@@ -95,6 +95,11 @@ resources:
         processor:
             name: wis2box_api.plugins.process.station_info.StationInfoProcessor
 
+    dataset-info:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.dataset_info.DatasetInfoProcessor
+
     pygeometa-metadata-generate:
         type: process
         processor:

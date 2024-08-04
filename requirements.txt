@@ -10,3 +10,4 @@ pygeometa
 sqlalchemy==2.0.25
 pymetdecoder-wmo==0.1.14
 synop2bufr==0.7.0
+minio==7.2.7

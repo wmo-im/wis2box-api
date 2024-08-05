@@ -29,10 +29,6 @@ set +e
 #ensure environment-variables are available for cronjob
 printenv | grep -v "no_proxy" >> /etc/environment
 
-# ensure cron is running
-service cron start
-service cron status
-
 # gunicorn env settings with defaults
 SCRIPT_NAME="/"
 CONTAINER_NAME="wis2box-api"
@@ -64,6 +60,10 @@ pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
 [[ $? -ne 0 ]] && error "ERROR: OpenAPI document could not be generated"
 
 echo "openapi.yml generated continue to pygeoapi"
+
+# ensure cron is running
+service cron start
+service cron status
 
 case ${entry_cmd} in
     # Run pygeoapi server

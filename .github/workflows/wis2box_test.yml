@@ -22,7 +22,7 @@ jobs:
       - name: Docker Compose up -d --build
         working-directory: docker_compose_test
         run:
-          docker-compose up -d  --build
+          docker compose up -d  --build
 
       - name: Wait for service to be ready
         run: sleep 30

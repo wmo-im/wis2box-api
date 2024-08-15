@@ -168,8 +168,8 @@ class DatasetInfoProcessor(BaseProcessor):
                             'files_public_24hrs': 0,
                             'timestamp_last_incoming': None,
                             'timestamp_last_public': None,
-                            'es_index': index,
-                            'es_status': None
+                            'index': index,
+                            'index_status': None
                         }
             else:
                 LOGGER.error(f'Error getting collection list: {response.text}')
@@ -186,7 +186,7 @@ class DatasetInfoProcessor(BaseProcessor):
 
         for c_id in dataset_info:
             topic = (dataset_info[c_id]['topic']).replace('origin/a/wis2/', '')
-            es_index = dataset_info[c_id]['es_index']
+            es_index = dataset_info[c_id]['index']
             if c_id in incoming_bucket_info or topic in incoming_bucket_info:
                 key = c_id if c_id in incoming_bucket_info else topic
                 dataset_info[c_id]['files_incoming_24hrs'] = incoming_bucket_info[key]['files_last24hrs'] # noqa
@@ -200,7 +200,7 @@ class DatasetInfoProcessor(BaseProcessor):
             if dataset_info[c_id]['timestamp_last_public'] is not None:
                 dataset_info[c_id]['timestamp_last_public'] = dataset_info[c_id]['timestamp_last_public'].astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ') # noqa
             if self.es is not None and es_index != 'notfound':
-                dataset_info[c_id]['es_status'] = self._get_es_index_info(es_index) # noqa
+                dataset_info[c_id]['index_status'] = self._get_es_index_info(es_index) # noqa
             continue
         outputs = {
             'dataset_info': dataset_info

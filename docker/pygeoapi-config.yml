@@ -38,17 +38,17 @@ metadata:
         keywords:
             en:
                 - wis2box
-        terms_of_service: none
-        url: none
+        terms_of_service: null
+        url: null
     provider:
         name: WIS 2.0 in a box
         url: https://docs.wis2box.wis.wmo.int
     contact:
-        name: none
-        email: none
+        name: null
+        email: null
     license:
-        name: See wis2box documentation
-        url: https://docs.wis2box.wis.wmo.int
+        name: WMO Unified Data Policy
+        url: https://library.wmo.int/records/item/58009-wmo-unified-data-policy
 
 resources:
     station-info:

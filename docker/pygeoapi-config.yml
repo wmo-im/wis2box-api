@@ -33,8 +33,8 @@ metadata:
                 for centres to integrate their data holdings and publish them
                 to the WMO Information System with a plug and play capability
                 supporting data publishing, discovery and access.
-                The wis2box-api provides processes to manage datasets and tools
-                for data transformation and publication.
+                wis2box-api provides an API providing data and processes for interactive
+                visualization, data transformation and publication.
         keywords:
             en:
                 - wis2box

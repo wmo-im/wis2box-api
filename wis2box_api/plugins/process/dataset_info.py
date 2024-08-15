@@ -99,6 +99,8 @@ class DatasetInfoProcessor(BaseProcessor):
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
             self.es = None
+        else:
+            LOGGER.info('Connected to Elasticsearch')
 
         storage_url = os.getenv('WIS2BOX_STORAGE_SOURCE')
         access_key = os.getenv('WIS2BOX_STORAGE_USERNAME')
@@ -119,6 +121,7 @@ class DatasetInfoProcessor(BaseProcessor):
                 secret_key=secret_key,
                 secure=is_secure
             )
+            LOGGER.info('Connected to MinIO')
         except Exception as err:
             LOGGER.error(f'Error connecting to MinIO: {err}')
             self.minio_client = None
@@ -224,23 +227,23 @@ class DatasetInfoProcessor(BaseProcessor):
             # Retrieve the index settings
             settings = self.es.indices.get_settings(index=index)
             # Extract the 'read_only_allow_delete' setting
-            read_only_allow_delete = settings[index]["settings"]["index"].get("blocks.read_only_allow_delete", "false") # noqa
+            read_only_allow_delete = settings[index]['settings']['index'].get('blocks.read_only_allow_delete', False) # noqa
             # Retrieve the index stats
             stats = self.es.indices.stats(index=index)
             # Extract the 'total' document counts
             total_docs = None
             index_failed = None
             total_size = None
-            if "_all" in stats and "primaries" in stats["_all"]:
-                stats = stats["_all"]["primaries"]
-                if "docs" in stats and "count" in stats["docs"]:
-                    total_docs = stats["docs"]["count"]
+            if '_all' in stats and 'primaries' in stats['_all']:
+                stats = stats['_all']['primaries']
+                if 'docs' in stats and 'count' in stats['docs']:
+                    total_docs = stats['docs']['count']
                 # extract failed index count
-                if "indexing" in stats and "index_failed" in stats["indexing"]:
-                    index_failed = stats["indexing"]["index_failed"]
+                if 'indexing' in stats and 'index_failed' in stats['indexing']:
+                    index_failed = stats['indexing']['index_failed']
                 # extract the total size of the index
-                if "store" in stats and "size_in_bytes" in stats["store"]:
-                    total_size = stats["store"]["size_in_bytes"]
+                if 'store' in stats and 'size_in_bytes' in stats['store']:
+                    total_size = stats['store']['size_in_bytes']
             # fill the dictionary
             my_dict = {
                 'total_docs': total_docs,

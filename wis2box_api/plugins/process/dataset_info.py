@@ -220,7 +220,6 @@ class DatasetInfoProcessor(BaseProcessor):
 
         if self.es is None:
             return my_dict
-
         try:
             # Retrieve the index settings
             settings = self.es.indices.get_settings(index=index)
@@ -229,11 +228,19 @@ class DatasetInfoProcessor(BaseProcessor):
             # Retrieve the index stats
             stats = self.es.indices.stats(index=index)
             # Extract the 'total' document counts
-            total_docs = stats["_all"]["primaries"]["docs"]["count"]
-            # extract failed index count
-            index_failed = stats["_all"]["primaries"]["indexing"]["index_failed"] # noqa
-            # extract the total size of the index
-            total_size = stats["_all"]["primaries"]["store"]["size_in_bytes"]
+            total_docs = None
+            index_failed = None
+            total_size = None
+            if "_all" in stats and "primaries" in stats["_all"]:
+                stats = stats["_all"]["primaries"]
+                if "docs" in stats and "count" in stats["docs"]:
+                    total_docs = stats["docs"]["count"]
+                # extract failed index count
+                if "indexing" in stats and "index_failed" in stats["indexing"]:
+                    index_failed = stats["indexing"]["index_failed"]
+                # extract the total size of the index
+                if "store" in stats and "size_in_bytes" in stats["store"]:
+                    total_size = stats["store"]["size_in_bytes"]
             # fill the dictionary
             my_dict = {
                 'total_docs': total_docs,
@@ -241,8 +248,8 @@ class DatasetInfoProcessor(BaseProcessor):
                 'index_failed': index_failed,
                 'read_only_allow_delete': read_only_allow_delete
             }
-        except Exception as err:
-            LOGGER.error(f'Error getting index info: {err}')
+        except Exception:
+            return my_dict
 
         return my_dict
 

@@ -40,7 +40,7 @@ metadata:
                 - wis2box
                 - WIS2 Node
         url: https://docs.wis2box.wis.wmo.int
-        terms_of_service: https://www.apache.org/licenses/LICENSE-2.0
+        terms_of_service: null
     provider:
         name: WIS 2.0 in a box
         url: https://docs.wis2box.wis.wmo.int
@@ -48,7 +48,7 @@ metadata:
         name: World Meteorological Organization
         address: 7bis, avenue de la Paix
         city: Geneva
-        postalcode: 1211
+        postalcode: "1211"
         country: Switzerland
         email: null
         url: https://wmo.int/contact-us

@@ -26,7 +26,7 @@ logging:
 metadata:
     identification:
         title:
-            en: wis2box-api
+            en: WIS2 in a box API
         description:
             en: |-
                 WIS 2.0 in a box (wis2box) provides a platform with the capabilities
@@ -38,17 +38,23 @@ metadata:
         keywords:
             en:
                 - wis2box
-        terms_of_service: null
-        url: null
+                - WIS2 Node
+        url: https://docs.wis2box.wis.wmo.int
     provider:
         name: WIS 2.0 in a box
         url: https://docs.wis2box.wis.wmo.int
     contact:
-        name: null
+        name: World Meteorological Organization
+        address: 7bis, avenue de la Paix
+        city: Geneva
+        postalcode: 1211
+        country: Switzerland
         email: null
+        url: https://wmo.int/contact-us
+        role: pointOfContact
     license:
-        name: WMO Unified Data Policy
-        url: https://library.wmo.int/records/item/58009-wmo-unified-data-policy
+        name: Apache License 2.0
+        url: https://www.apache.org/licenses/LICENSE-2.0
 
 resources:
     station-info:

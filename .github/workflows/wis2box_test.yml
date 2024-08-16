@@ -64,4 +64,4 @@ jobs:
         working-directory: docker_compose_test
         if: ${{ failure() }}
         run: |
-          docker-compose logs
+          docker compose logs

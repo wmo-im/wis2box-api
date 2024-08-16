@@ -50,7 +50,7 @@ metadata:
         city: Geneva
         postalcode: "1211"
         country: Switzerland
-        email: null
+        email: not-defined
         url: https://wmo.int/contact-us
         role: pointOfContact
     license:

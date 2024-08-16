@@ -40,6 +40,7 @@ metadata:
                 - wis2box
                 - WIS2 Node
         url: https://docs.wis2box.wis.wmo.int
+        terms_of_service: https://www.apache.org/licenses/LICENSE-2.0
     provider:
         name: WIS 2.0 in a box
         url: https://docs.wis2box.wis.wmo.int

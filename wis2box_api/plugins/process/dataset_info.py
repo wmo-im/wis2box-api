@@ -38,6 +38,17 @@ LOGGER = logging.getLogger(__name__)
 STORAGE_PUBLIC = os.getenv('WIS2BOX_STORAGE_PUBLIC')
 STORAGE_INCOMING = os.getenv('WIS2BOX_STORAGE_INCOMING')
 
+STORAGE_URL = os.getenv('WIS2BOX_STORAGE_SOURCE')
+ACCESS_KEY = os.getenv('WIS2BOX_STORAGE_USERNAME')
+SECRET_KEY = os.getenv('WIS2BOX_STORAGE_PASSWORD')
+
+IS_SECURE = False
+S3_ENDPOINT = STORAGE_URL.replace('http://', '')
+if STORAGE_URL.startswith('https://'):
+    IS_SECURE = True
+    S3_ENDPOINT = STORAGE_URL.replace('https://', '')
+
+
 PROCESS_DEF = {
     'version': '0.1.0',
     'id': 'dataset-info',
@@ -99,32 +110,6 @@ class DatasetInfoProcessor(BaseProcessor):
             msg = 'Cannot connect to Elasticsearch'
             LOGGER.error(msg)
             self.es = None
-        else:
-            LOGGER.info('Connected to Elasticsearch')
-
-        storage_url = os.getenv('WIS2BOX_STORAGE_SOURCE')
-        access_key = os.getenv('WIS2BOX_STORAGE_USERNAME')
-        secret_key = os.getenv('WIS2BOX_STORAGE_PASSWORD')
-
-        is_secure = False
-        s3_endpoint = None
-        if storage_url.startswith('https://'):
-            is_secure = True
-            s3_endpoint = storage_url.replace('https://', '')
-        else:
-            s3_endpoint = storage_url.replace('http://', '')
-
-        try:
-            self.minio_client = minio.Minio(
-                s3_endpoint,
-                access_key=access_key,
-                secret_key=secret_key,
-                secure=is_secure
-            )
-            LOGGER.info('Connected to MinIO')
-        except Exception as err:
-            LOGGER.error(f'Error connecting to MinIO: {err}')
-            self.minio_client = None
 
     def execute(self, data):
         """
@@ -134,6 +119,8 @@ class DatasetInfoProcessor(BaseProcessor):
 
         :returns: 'application/json'
         """
+
+        LOGGER.info('dataset-info processor execute')
 
         mimetype = 'application/json'
 
@@ -183,9 +170,8 @@ class DatasetInfoProcessor(BaseProcessor):
 
         # define date offset
         now_minus_24hrs = datetime.now(timezone.utc) - timedelta(hours=24)
-        if self.minio_client is not None:
-            incoming_bucket_info = self._get_bucket_info(STORAGE_INCOMING, now_minus_24hrs) # noqa
-            public_bucket_info = self._get_bucket_info(STORAGE_PUBLIC, now_minus_24hrs) # noqa
+        incoming_bucket_info = self._get_bucket_info(STORAGE_INCOMING, now_minus_24hrs) # noqa
+        public_bucket_info = self._get_bucket_info(STORAGE_PUBLIC, now_minus_24hrs) # noqa
 
         for c_id in dataset_info:
             topic = (dataset_info[c_id]['topic']).replace('origin/a/wis2/', '')
@@ -266,7 +252,19 @@ class DatasetInfoProcessor(BaseProcessor):
         """
 
         my_dict = {}
-        for object in self.minio_client.list_objects(bucket_name, '', True):
+        try:
+            minio_client = minio.Minio(
+                S3_ENDPOINT,
+                access_key=ACCESS_KEY,
+                secret_key=SECRET_KEY,
+                secure=IS_SECURE
+            )
+            LOGGER.info('Connected to MinIO')
+        except Exception as err:
+            LOGGER.error(f'Error connecting to MinIO: {err}')
+            return my_dict
+
+        for object in minio_client.list_objects(bucket_name, '', True):
             obj_name = object.object_name
             dataset_id = ''
             if bucket_name == STORAGE_PUBLIC:

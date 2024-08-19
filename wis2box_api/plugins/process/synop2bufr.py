@@ -20,6 +20,7 @@
 ###############################################################################
 
 import logging
+import requests
 
 from pygeoapi.process.base import BaseProcessor
 from synop2bufr import transform
@@ -28,6 +29,8 @@ from wis2box_api.wis2box.handle import DataHandler
 from wis2box_api.wis2box.handle import handle_error
 
 from wis2box_api.wis2box.station import Stations
+
+from wis2box_api.wis2box.env import WIS2BOX_DOCKER_API_URL
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,16 +134,33 @@ class SynopPublishProcessor(BaseProcessor):
         LOGGER.info('Executing process {}'.format(self.name))
 
         try:
-            channel = data['channel']
             notify = data['notify']
             metadata_id = data.get('metadata_id', None)
-            # initialize the DataHandler
-            data_handler = DataHandler(channel,
-                                       notify,
-                                       metadata_id=metadata_id)
+            channel = data.get('channel', None)
+            if metadata_id is None:
+                raise Exception('metadata_id must be provided')
         except Exception as err:
             return handle_error({err})
 
+        # get the channel from the metadata
+        if channel is None:
+            try:
+                url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items?f=json' # noqa
+                response = requests.get(url)
+                if response.status_code == 200:
+                    for item in response.json()['features']:
+                        if metadata_id == item['properties']['identifier']:
+                            channel = item['properties']['wmo:topicHierarchy']
+                            break
+            except Exception as err:
+                return handle_error(f'Failed to load metadata: {err}')
+        if channel is None:
+            return handle_error(f'No metadata found for {metadata_id}')
+
+        # initialize the DataHandler
+        data_handler = DataHandler(channel,
+                                   notify,
+                                   metadata_id=metadata_id)
         # get the station metadata for the channel
         stations = Stations(channel=channel)
         # get the station metadata as a CSV string

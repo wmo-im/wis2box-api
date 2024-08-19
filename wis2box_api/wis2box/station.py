@@ -153,6 +153,11 @@ class Stations():
 
         stations = {}
         channel = channel.replace('origin/a/wis2/', '')
+
+        def station_in_channel(station, channel):
+            topics = station['properties']['topics'] if 'topics' in station['properties'] else [] # noqa
+            return channel in [x.replace('origin/a/wis2/', '') for x in topics]
+
         try:
             es = Elasticsearch(API_BACKEND_URL)
             nbatch = 50
@@ -160,14 +165,14 @@ class Stations():
             if len(res['hits']['hits']) == 0:
                 LOGGER.debug('No stations found')
             for hit in res['hits']['hits']:
-                topics = hit['_source']['properties']['topics'] if 'topics' in hit['_source']['properties'] else [] # noqa
-                if channel in [x.replace('origin/a/wis2/', '') for x in topics]: # noqa
+                if station_in_channel(hit['_source'], channel):
                     stations[hit['_source']['id']] = hit['_source']
             next_batch = nbatch
             while len(res['hits']['hits']) > 0:
                 res = es.search(index="stations", query={"match_all": {}}, size=nbatch, from_=next_batch) # noqa
                 for hit in res['hits']['hits']:
-                    stations[hit['_source']['id']] = hit['_source']
+                    if station_in_channel(hit['_source'], channel):
+                        stations[hit['_source']['id']] = hit['_source']
                 next_batch += nbatch
         except Exception as err:
             LOGGER.error(f'Failed to load stations from backend: {err}')

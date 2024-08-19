@@ -137,8 +137,8 @@ class SynopPublishProcessor(BaseProcessor):
             notify = data['notify']
             metadata_id = data.get('metadata_id', None)
             channel = data.get('channel', None)
-            if metadata_id is None:
-                raise Exception('metadata_id must be provided')
+            if metadata_id is None and notify:
+                raise Exception('metadata_id must be provided if notify is True') # noqa
         except Exception as err:
             return handle_error({err})
 

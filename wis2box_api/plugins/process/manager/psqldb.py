@@ -105,17 +105,25 @@ class PsqlDBManager(BaseManager):
                          exc_info=(traceback))
             return False
 
-    def get_jobs(self, status=None):
+    def get_jobs(self, status=None, limit=10, offset=0):
+        query_params = {
+            'limit': limit,
+            'offset': offset
+        }
         try:
             if status is not None:
-                query = text("SELECT job from job_manager_pygeoapi WHERE job->>'status' = ':status'")  # noqa
-                result = self.db.execute(query, parameters=dict(status = status)).fetchall()  # noqa
+                query_params['status'] = status
+                query = text("SELECT job from job_manager_pygeoapi WHERE job->>'status' = ':status' limit :limit offset :offset")  # noqa
+                result = self.db.execute(query, parameters=query_params)).fetchall()  # noqa
             else:
-                query = text('SELECT job from job_manager_pygeoapi')  # noqa
-                result = self.db.execute(query).fetchall()
+                query = text('SELECT job from job_manager_pygeoapi limit :limit offset :offset')  # noqa
+                result = self.db.execute(query, parameters=query_params)).fetchall()  # noqa
             # now convert jobs to list of dicts
             jobs = [dict(row[0]) for row in result]
-            return jobs
+            return {
+                'jobs': jobs,=
+                'numberMatched': len(jobs)
+            }
         except Exception:
             LOGGER.error('JOBMANAGER - get_jobs error',
                          exc_info=(traceback))

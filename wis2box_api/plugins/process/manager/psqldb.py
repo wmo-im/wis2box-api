@@ -121,7 +121,7 @@ class PsqlDBManager(BaseManager):
             # now convert jobs to list of dicts
             jobs = [dict(row[0]) for row in result]
             return {
-                'jobs': jobs,=
+                'jobs': jobs,
                 'numberMatched': len(jobs)
             }
         except Exception:

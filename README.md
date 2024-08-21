@@ -4,12 +4,7 @@ WIS 2.0 in a box OGC API
 
 ## Installation
 
-wis2box-api is part of the [wis2box](https://docs.wis2box.wis.wmo.int) project.  To
-install wis2box-api in standalone mode:
-
-```bash
-docker install wmo-im/wis2box:latest
-```
+wis2box-api is part of the [wis2box](https://docs.wis2box.wis.wmo.int) project.
 
 ### Requirements
 

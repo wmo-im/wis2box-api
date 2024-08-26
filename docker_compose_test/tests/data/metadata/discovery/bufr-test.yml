@@ -3,7 +3,6 @@ wis2box:
     topic_hierarchy: bufr-test.data.core.weather.surface-based-observations.synop
     country: int
     centre_id: bufr-test
-    data_mappings:
 
 mcf:
     version: 1.0

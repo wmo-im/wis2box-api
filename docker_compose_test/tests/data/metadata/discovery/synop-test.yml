@@ -3,7 +3,6 @@ wis2box:
     topic_hierarchy: synop-test.data.core.weather.surface-based-observations.synop
     country: int
     centre_id: synop-test
-    data_mappings:
 
 mcf:
     version: 1.0

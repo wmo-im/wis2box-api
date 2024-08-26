@@ -4,6 +4,7 @@ wis2box:
     country: int
     centre_id: bufr-test
     data_mappings:
+        plugins:
 
 mcf:
     version: 1.0

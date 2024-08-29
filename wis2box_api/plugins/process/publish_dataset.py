@@ -173,7 +173,7 @@ class PublishDatasetProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
-        status = 'unknown'
+        status = 'success'
 
         try:
             metadata = data['metadata']
@@ -237,6 +237,7 @@ class PublishDatasetProcessor(BaseProcessor):
         except Exception as e:
             msg = f'Error publishing on topic={topic}, error={e}' # noqa
             LOGGER.error(msg)
+            status = msg
 
         mimetype = 'application/json'
         outputs = {

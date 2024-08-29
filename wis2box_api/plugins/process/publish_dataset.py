@@ -219,15 +219,15 @@ class PublishDatasetProcessor(BaseProcessor):
             status = f'Error publishing on topic={topic}, error={e}'
         # sleep for a 1 second to allow the backend to process the message
         time.sleep(1)
-        metadata_id = metadata['id'] if 'id' in metadata else 'unknown'
+        #metadata_id = metadata['id'] if 'id' in metadata else 'unknown'
         # check that discovery-api/metadata/items/{metadata_id} exists
-        url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{metadata_id}?f=json' # noqa
-        response = requests.get(url)
+        #url = f'{WIS2BOX_DOCKER_API_URL}/collections/discovery-metadata/items/{metadata_id}?f=json' # noqa
+        #response = requests.get(url)
         # when the collection does not exists the api returns a 404
-        if response.status_code != 200:
-            status = f'Status: {response.status_code}. Failed to create metadata with id={metadata_id}' # noqa
-        else:
-            status = 'success'
+        #if response.status_code != 200:
+        #    status = f'Status: {response.status_code}. Failed to create metadata with id={metadata_id}' # noqa
+        #else:
+        #    status = 'success'
 
         try:
             # send a message to refresh the data mappings

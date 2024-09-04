@@ -104,6 +104,7 @@ class Cap2geojsonProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
+        items = []
         input_string = ''
         error = ''
         try:
@@ -130,14 +131,14 @@ class Cap2geojsonProcessor(BaseProcessor):
             else:
                 raise Exception('No data or data_url provided')
             LOGGER.debug('Generating GeoJSON features')
-            result = as_geojson(input_string)
+            items.append(as_geojson(input_string))
         except Exception as e:
             LOGGER.error(e)
             error = str(e)
 
         mimetype = 'application/json'
         outputs = {
-            'result': result,
+            'items': items,
             'error': error
         }
         return mimetype, outputs

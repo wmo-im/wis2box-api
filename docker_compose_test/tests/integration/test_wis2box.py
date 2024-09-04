@@ -50,10 +50,8 @@ def store_message(message, channel):
             json.dump(message, f, indent=4)
 
 
-def transform_to_bufr(process_name: str,
-                      data: str,
-                      expected_response: dict):
-    """Transform data to bufr
+def transform_to(process_name: str, data: str, expected_response: dict):
+    """Transform data to bufr or geojson
 
     :param process_name: name of the process
     :param data: data to be transformed
@@ -171,7 +169,7 @@ def test_synop2bufr():
     client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
     # start the loop
     client.loop_start()
-    transform_to_bufr(process_name, data, expected_response)
+    transform_to(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker
@@ -230,7 +228,7 @@ def test_csv2bufr():
     # start the loop
     client.loop_start()
     # transform bufr message
-    transform_to_bufr(process_name, data, expected_response)
+    transform_to(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker
@@ -286,7 +284,61 @@ def test_bufr2bufr():
     # start the loop
     client.loop_start()
     # transform bufr message
-    transform_to_bufr(process_name, data, expected_response)
+    transform_to(process_name, data, expected_response)
+    # stop the loop
+    client.loop_stop()
+    # disconnect from the broker
+    client.disconnect()
+
+
+def test_cap2geojson():
+    """Test cap2geojson"""
+
+    process_name = 'wis2box-cap2geojson'
+
+    with open('./data/sc.xml', 'r') as f:
+        cap_xml = f.read()
+
+    data = {
+        'inputs': {
+            'data': cap_xml,
+            'metadata_id': 'urn:wmo:md:cap:test',
+            'channel': 'cap-test/data/core/weather/advisories-warnings',
+            'notify': True
+        }
+    }
+
+    with open('./data/sc.geojson', 'r') as f:
+        cap_geojson = f.read()
+
+    expected_response = {
+        'result': 'success',
+        'messages transformed': 1,
+        'messages published': 1,
+        'data_items': [
+            {
+                'data': cap_geojson,
+                'channel': data['inputs']['channel']
+            }
+        ],
+        'errors': [],
+        'warnings': []
+    }
+
+    # start mqtt client
+    client = mqtt.Client('wis2box-cap2geojson')
+    # user credentials wis2box:wis2box
+    client.username_pw_set('wis2box', 'wis2box')
+    # connect to the broker
+    client.connect('localhost', 5883, 60)
+    # subscribe to the topic
+    client.subscribe('wis2box/cap/publication')
+    # define callback function for received messages
+    client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
+    # start the loop
+    client.loop_start()
+    # transform bufr message
+    transform_to(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker

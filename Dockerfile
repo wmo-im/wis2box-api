@@ -33,17 +33,18 @@ RUN apt-get install -y --no-install-recommends \
     libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix wget \
     && rm -rf /var/lib/apt/lists/*
 
-# install pygeoapi, pywcmp, bufr2geojson
+# install pygeoapi, pywcmp, bufr2geojson, cap2geojson
 RUN pip3 install --no-cache-dir git+https://github.com/geopython/pygeoapi.git@17080d88b0cc10bc8114d7373a43326da4cea163 \
     && pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/refs/tags/0.3.2.zip \
     https://github.com/wmo-im/pywcmp/archive/refs/tags/0.8.5.zip \
     https://github.com/wmo-im/bufr2geojson/archive/refs/tags/v0.6.0.zip \
-    https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.7.0.zip
+    https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.7.0.zip \
+    cap2geojson
 
 RUN pywcmp bundle sync
 
-RUN mkdir -p /data && \ 
+RUN mkdir -p /data && \
     cd /data && \
     curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
 

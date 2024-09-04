@@ -104,8 +104,7 @@ class Cap2geojsonProcessor(BaseProcessor):
 
         LOGGER.debug('Execute process')
 
-        items = []
-        input_bytes = None
+        input_string = ''
         error = ''
         try:
             if 'data_url' in data:

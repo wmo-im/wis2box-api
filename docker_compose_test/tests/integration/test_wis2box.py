@@ -50,7 +50,7 @@ def store_message(message, channel):
             json.dump(message, f, indent=4)
 
 
-def transform_to(process_name: str, data: str, expected_response: dict):
+def transform_to(process_name: str, data: dict, expected_response: dict):
     """Transform data to bufr or geojson
 
     :param process_name: name of the process
@@ -336,7 +336,7 @@ def test_cap2geojson():
     # connect to the broker
     client.connect('localhost', 5883, 60)
     # subscribe to the topic
-    client.subscribe('wis2box/cap/publication')
+    client.subscribe('wis2box/data/publication')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
     # start the loop

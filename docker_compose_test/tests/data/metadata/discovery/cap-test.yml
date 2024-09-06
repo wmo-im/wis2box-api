@@ -19,16 +19,18 @@ identification:
     dates:
         creation: 2023-01-18
     keywords:
-        - CAP
-        - warnings
-        - alerts
-    wmo:
-        keywords:
-            - weather
-        keywords_type: theme
-        vocabulary:
-            name: Earth system disciplines as defined by the WMO Unified Data Policy, Resolution 1 (Cg-Ext(2021), Annex 1.
-            url:  https://codes.wmo.int/wis/topic-hierarchy/earth-system-discipline
+        default:
+            keywords:
+                - CAP
+                - warnings
+                - alerts
+        wmo:
+            keywords:
+                - weather
+            keywords_type: theme
+            vocabulary:
+                name: Earth system disciplines as defined by the WMO Unified Data Policy, Resolution 1 (Cg-Ext(2021), Annex 1.
+                url:  https://codes.wmo.int/wis/topic-hierarchy/earth-system-discipline
 
     extents:
         spatial:

@@ -296,7 +296,7 @@ def test_cap2geojson():
 
     process_name = 'wis2box-cap2geojson'
 
-    with open('./data/sc.xml', 'r') as f:
+    with open('docker_compose_test/tests/integration/data/sc.xml', 'r') as f:
         cap_xml = f.read()
 
     data = {
@@ -308,7 +308,7 @@ def test_cap2geojson():
         }
     }
 
-    with open('./data/sc.geojson', 'r') as f:
+    with open('docker_compose_test/tests/integration/data/sc.geojson', 'r') as f: # noqa
         cap_geojson = f.read()
 
     expected_response = {

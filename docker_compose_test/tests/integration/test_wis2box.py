@@ -50,7 +50,45 @@ def store_message(message, channel):
             json.dump(message, f, indent=4)
 
 
-def transform_to(process_name: str, data: dict, expected_response: dict):
+def transform_to_string(process_name: str, data: dict, expected_response: dict):
+    """Transform data to bufr or geojson
+
+    :param process_name: name of the process
+    :param data: data to be transformed
+    :param expected_response: expected response
+
+    """
+
+    url = f'{API_URL}/processes/{process_name}/execution'
+
+    headers = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    headers['Prefer'] = 'respond-async'
+    response = requests.post(url, headers=headers, json=data)
+    headers_json = dict(response.headers)
+    assert response.status_code == 201, f'Aysnc response status code: {response.status_code}'  # noqa
+    # print(headers_json)
+    if 'Location' not in headers_json:
+        assert False, f'Location not in headers: {headers_json}'
+    # get the job_location_url from the response
+    job_location_url = headers_json['Location']
+    # print(job_location_url)
+    status = "accepted"
+    while status == "accepted" or status == "running":
+        # get the job status
+        response = requests.get(job_location_url, headers=headers)
+        response_json = response.json()
+        status = response_json['status']
+        time.sleep(0.1)
+    assert status == "successful"
+    # get result from job_location_url/results?f=json
+    response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
+    response_json = response.json()
+    return response_json
+
+def transform_to_bufr(process_name: str, data: dict, expected_response: dict):
     """Transform data to bufr or geojson
 
     :param process_name: name of the process
@@ -169,7 +207,7 @@ def test_synop2bufr():
     client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
     # start the loop
     client.loop_start()
-    transform_to(process_name, data, expected_response)
+    transform_to_bufr(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker
@@ -228,7 +266,7 @@ def test_csv2bufr():
     # start the loop
     client.loop_start()
     # transform bufr message
-    transform_to(process_name, data, expected_response)
+    transform_to_bufr(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker
@@ -284,7 +322,7 @@ def test_bufr2bufr():
     # start the loop
     client.loop_start()
     # transform bufr message
-    transform_to(process_name, data, expected_response)
+    transform_to_bufr(process_name, data, expected_response)
     # stop the loop
     client.loop_stop()
     # disconnect from the broker
@@ -305,45 +343,19 @@ def test_cap2geojson():
 
     data = {
         'inputs': {
-            'data': cap_xml,
-            'metadata_id': 'urn:wmo:md:cap:test',
-            'channel': 'cap-test/data/core/weather/advisories-warnings',
-            'notify': True
+            'data': cap_xml
         }
     }
 
     with open(cap_geojson_path, 'r') as f: # noqa
         cap_geojson = f.read()
 
-    expected_response = {
-        'result': 'success',
-        'messages transformed': 1,
-        'messages published': 1,
-        'data_items': [
-            {
-                'data': cap_geojson,
-                'channel': data['inputs']['channel']
-            }
-        ],
-        'errors': [],
-        'warnings': []
-    }
+    output = transform_to_string(process_name, data, cap_geojson)
 
-    # start mqtt client
-    client = mqtt.Client('cap2geojson')
-    # user credentials wis2box:wis2box
-    client.username_pw_set('wis2box', 'wis2box')
-    # connect to the broker
-    client.connect('localhost', 5883, 60)
-    # subscribe to the topic
-    client.subscribe('wis2box/cap/publication')
-    # define callback function for received messages
-    client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
-    # start the loop
-    client.loop_start()
-    # transform bufr message
-    transform_to(process_name, data, expected_response)
-    # stop the loop
-    client.loop_stop()
-    # disconnect from the broker
-    client.disconnect()
+    assert 'items' in output
+    assert len(output['items']) == 1
+    assert output['items'][0] == cap_geojson
+
+
+
+

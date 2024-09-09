@@ -294,7 +294,7 @@ def test_bufr2bufr():
 def test_cap2geojson():
     """Test cap2geojson"""
 
-    process_name = 'wis2box-cap2geojson'
+    process_name = 'cap2geojson'
 
     script_dir = os.path.dirname(__file__)
     cap_xml_path = os.path.join(script_dir, './data/sc.xml')
@@ -330,7 +330,7 @@ def test_cap2geojson():
     }
 
     # start mqtt client
-    client = mqtt.Client('wis2box-cap2geojson')
+    client = mqtt.Client('cap2geojson')
     # user credentials wis2box:wis2box
     client.username_pw_set('wis2box', 'wis2box')
     # connect to the broker

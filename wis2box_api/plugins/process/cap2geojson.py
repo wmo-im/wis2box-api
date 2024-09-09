@@ -33,7 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 PROCESS_METADATA = {
     'version': '0.1.0',
-    'id': 'wis2box-cap2geojson',
+    'id': 'cap2geojson',
     'title': 'Convert CAP XML to geoJSON',  # noqa
     'description': 'Download CAP XML from URL and convert file-content to geoJSON',  # noqa
     'keywords': [],

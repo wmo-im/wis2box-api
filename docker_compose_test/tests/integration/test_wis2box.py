@@ -50,10 +50,47 @@ def store_message(message, channel):
             json.dump(message, f, indent=4)
 
 
-def transform_to_bufr(process_name: str,
-                      data: str,
-                      expected_response: dict):
-    """Transform data to bufr
+def transform_to_string(process_name: str, data: dict) -> dict:
+    """Transform data to bufr or geojson
+
+    :param process_name: name of the process
+    :param data: data to be transformed
+
+    :returns: response_json
+    """
+
+    url = f'{API_URL}/processes/{process_name}/execution'
+
+    headers = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    headers['Prefer'] = 'respond-async'
+    response = requests.post(url, headers=headers, json=data)
+    headers_json = dict(response.headers)
+    assert response.status_code == 201, f'Aysnc response status code: {response.status_code}'  # noqa
+    # print(headers_json)
+    if 'Location' not in headers_json:
+        assert False, f'Location not in headers: {headers_json}'
+    # get the job_location_url from the response
+    job_location_url = headers_json['Location']
+    # print(job_location_url)
+    status = "accepted"
+    while status == "accepted" or status == "running":
+        # get the job status
+        response = requests.get(job_location_url, headers=headers)
+        response_json = response.json()
+        status = response_json['status']
+        time.sleep(0.1)
+    assert status == "successful"
+    # get result from job_location_url/results?f=json
+    response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
+    response_json = response.json()
+    return response_json
+
+
+def transform_to_bufr(process_name: str, data: dict, expected_response: dict):
+    """Transform data to bufr or geojson
 
     :param process_name: name of the process
     :param data: data to be transformed
@@ -291,3 +328,30 @@ def test_bufr2bufr():
     client.loop_stop()
     # disconnect from the broker
     client.disconnect()
+
+
+def test_cap2geojson():
+    """Test cap2geojson"""
+
+    process_name = 'cap2geojson'
+
+    script_dir = os.path.dirname(__file__)
+    cap_xml_path = os.path.join(script_dir, './data/sc.xml')
+    cap_geojson_path = os.path.join(script_dir, './data/sc.geojson')
+
+    with open(cap_xml_path, 'r') as f:
+        cap_xml = f.read()
+
+    data = {
+        'inputs': {
+            'data': cap_xml
+        }
+    }
+    output = transform_to_string(process_name, data)
+
+    with open(cap_geojson_path, 'r') as f: # noqa
+        cap_geojson = json.load(f)
+
+    assert 'items' in output
+    assert len(output['items']) == 1
+    assert output['items'][0] == cap_geojson

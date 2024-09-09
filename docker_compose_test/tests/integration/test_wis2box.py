@@ -336,7 +336,7 @@ def test_cap2geojson():
     # connect to the broker
     client.connect('localhost', 5883, 60)
     # subscribe to the topic
-    client.subscribe('wis2box/data/publication')
+    client.subscribe('wis2box/cap/publication')
     # define callback function for received messages
     client.on_message = lambda client, userdata, message: store_message(message, channel=data['inputs']['channel']) # noqa
     # start the loop

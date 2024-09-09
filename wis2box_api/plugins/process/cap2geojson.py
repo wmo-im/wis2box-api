@@ -122,14 +122,10 @@ class Cap2geojsonProcessor(BaseProcessor):
                 # get the string from the response
                 input_string = result.text
             elif 'data' in data:
-                base64_encoded_data = data['data']
-                LOGGER.debug(f'Executing cap2geojson on: {base64_encoded_data}')  # noqa
-                # Decode base64 encoded data directly to bytes
-                input_bytes = base64.b64decode(base64_encoded_data)
-                # Convert bytes to UTF-8 string
-                input_string = input_bytes.decode('utf-8')
+                input_string = data['data']
+                LOGGER.debug(f'Executing cap2geojson on: {input_string}')
             else:
-                raise Exception('No data or data_url provided')
+                raise ValueError('No data or data_url provided')
             LOGGER.debug('Generating GeoJSON features')
             items.append(as_geojson(input_string))
         except Exception as e:

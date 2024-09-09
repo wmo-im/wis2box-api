@@ -50,13 +50,13 @@ def store_message(message, channel):
             json.dump(message, f, indent=4)
 
 
-def transform_to_string(process_name: str, data: dict, expected_response: dict):
+def transform_to_string(process_name: str, data: dict) -> dict:
     """Transform data to bufr or geojson
 
     :param process_name: name of the process
     :param data: data to be transformed
-    :param expected_response: expected response
 
+    :returns: response_json
     """
 
     url = f'{API_URL}/processes/{process_name}/execution'
@@ -346,16 +346,11 @@ def test_cap2geojson():
             'data': cap_xml
         }
     }
+    output = transform_to_string(process_name, data)
 
     with open(cap_geojson_path, 'r') as f: # noqa
-        cap_geojson = f.read()
-
-    output = transform_to_string(process_name, data, cap_geojson)
+        cap_geojson = json.load(f)
 
     assert 'items' in output
     assert len(output['items']) == 1
     assert output['items'][0] == cap_geojson
-
-
-
-

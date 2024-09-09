@@ -88,6 +88,7 @@ def transform_to_string(process_name: str, data: dict) -> dict:
     response_json = response.json()
     return response_json
 
+
 def transform_to_bufr(process_name: str, data: dict, expected_response: dict):
     """Transform data to bufr or geojson
 

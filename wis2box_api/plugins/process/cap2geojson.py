@@ -19,9 +19,7 @@
 #
 ###############################################################################
 
-import base64
 import logging
-
 import requests
 
 from pygeoapi.process.base import BaseProcessor

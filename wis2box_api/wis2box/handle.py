@@ -26,6 +26,7 @@ import logging
 import paho.mqtt.publish as publish
 
 from enum import Enum
+from time import sleep
 
 from wis2box_api.wis2box.env import BROKER_HOST
 from wis2box_api.wis2box.env import BROKER_PORT
@@ -166,6 +167,9 @@ class DataHandler():
                 if self._notify:
                     # send the last entry in the data list as a notification
                     result = self.send_data_publish_request(data[-1])
+                    # sleep 0.1 s after sending a data publish request
+                    # to avoid overloading the broker
+                    sleep(0.1)
                     if result != 'success':
                         errors.append(f'{result}')
                     else:

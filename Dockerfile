@@ -51,7 +51,7 @@ RUN mkdir -p /data && \
 RUN mkdir /opt/csv2bufr &&  \
     cd /opt/csv2bufr && \
     wget https://github.com/wmo-im/csv2bufr-templates/archive/main.tar.gz && \
-    tar -zxf main.tar.gz --strip-components=1 csv2bufr-templates/templates
+    tar -zxf main.tar.gz --strip-components=1 csv2bufr-templates-main/templates
 
 # install wis2box-api
 COPY . /app

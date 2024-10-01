@@ -26,7 +26,6 @@ import logging
 import paho.mqtt.publish as publish
 
 from enum import Enum
-from time import sleep
 
 from wis2box_api.wis2box.env import BROKER_HOST
 from wis2box_api.wis2box.env import BROKER_PORT

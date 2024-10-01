@@ -354,4 +354,4 @@ def test_cap2geojson():
 
     assert 'items' in output
     assert len(output['items']) == 1
-    assert output['items'][0]['features']['properties'] == cap_geojson['features']['properties'] 
+    assert output['items'][0]['features'][0]['properties'] == cap_geojson['features'][0]['properties'] 

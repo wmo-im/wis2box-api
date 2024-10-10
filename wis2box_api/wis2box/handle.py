@@ -35,9 +35,8 @@ from wis2box_api.wis2box.env import BROKER_PASSWORD
 LOGGER = logging.getLogger(__name__)
 
 DATA_OBJECT_MIMETYPES = {
-    'bufr4': 'application/x-bufr',
-    'grib2': 'application/x-grib2',
-    'grib': 'application/x-grib',
+    'bufr4': 'application/bufr',
+    'grib': 'application/grib',
     'cap': 'application/cap+xml',
     'geojson': 'application/json'
 }

@@ -122,7 +122,9 @@ PROCESS_METADATA = {
                     "identifier": "urn:wmo:md:test-wis-node2:surface-based-observations.synop", # noqa
                     "title": "Hourly synoptic observations from fixed-land stations (SYNOP) (test-wis-node2)", # noqa
                     "description": "this is a test dataset",
-                    "language": None,
+                    "language": {
+                        "code": None
+                    },
                     "keywords": ["surface", "land", "observations"],
                     "themes": [{
                         "concepts": [{"id": "weather", "title": "Weather"}],

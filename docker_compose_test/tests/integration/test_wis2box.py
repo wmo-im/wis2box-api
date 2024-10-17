@@ -126,6 +126,7 @@ def transform_to_bufr(process_name: str, data: dict, expected_response: dict):
     response = requests.get(f'{job_location_url}/results?f=json', headers=headers) # noqa
     response_json = response.json()
 
+    print(response_json)
     for key in ['result', 'messages transformed', 'messages published', 'errors', 'warnings']:  # noqa
         assert response_json[key] == expected_response[key]
 

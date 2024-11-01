@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build wis2box-api
         run: |
-          docker build -t wis2box-management:test wis2box-api
+          docker build -t wis2box-api:test wis2box-api
       - name: Run Trivy vulnerability scanner on wis2box-api
         if: always()
         uses: aquasecurity/trivy-action@0.20.0

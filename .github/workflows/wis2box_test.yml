@@ -41,7 +41,8 @@ jobs:
           docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/synop-test/data/core/weather/surface-based-observations/synop
           docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/csv-test/data/core/weather/surface-based-observations/synop
           docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/bufr-test/data/core/weather/surface-based-observations/synop
-
+          sleep 5
+          curl http://localhost:4343/oapi/collections/stations/items
       - name: Check status code API
         working-directory: docker_compose_test
         run: |

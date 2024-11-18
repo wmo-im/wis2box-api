@@ -47,6 +47,9 @@ function error() {
     exit -1
 }
 
+# create mappings directory /data/wi2box/mappings if it does not exist
+mkdir -p /data/wis2box/mappings
+
 # Workdir
 cd /pygeoapi
 

@@ -67,6 +67,11 @@ resources:
         type: process
         processor:
             name: wis2box_api.plugins.process.dataset_info.DatasetInfoProcessor
+    
+    mappings-info:
+        type: process
+        processor:
+            name: wis2box_api.plugins.process.mappings_info.MappingsInfoProcessor
 
     pygeometa-metadata-generate:
         type: process

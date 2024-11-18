@@ -397,5 +397,9 @@ def test_mappings_info():
         ]
     }
 
-    # compare the response with the expected response
-    assert response == expected_response
+    # compare that all expected templates are present, regardless of the order
+    assert len(response['templates']) == len(expected_response['templates'])
+    templates = response['templates']
+    for template in expected_response['templates']:
+        assert template['id'] in [t['id'] for t in templates]
+        assert template['title'] in [t['title'] for t in templates]

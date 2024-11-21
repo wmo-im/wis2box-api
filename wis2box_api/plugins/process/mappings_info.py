@@ -105,8 +105,8 @@ class MappingsInfoProcessor(BaseProcessor):
                 LOGGER.info(template)
                 id_ = template['path']
                 title = template['path']
-                if '/opt/csv2bufr/templates/' in id:
-                    id = id.replace('/opt/csv2bufr/templates/', '').replace('.json', '') # noqa
+                if '/opt/csv2bufr/templates/' in id_:
+                    id_ = id_.replace('/opt/csv2bufr/templates/', '').replace('.json', '') # noqa
                 # to ensure backward compatibility with existing titles
                 if title.find('aws-template') != -1:
                     title = 'AWS'
@@ -116,7 +116,7 @@ class MappingsInfoProcessor(BaseProcessor):
                     title = 'WIS2-pilot-template-2021'
                 else:
                     # extract title from filename
-                    title = id.split('/')[-1].replace('.json', '')
+                    title = id_.split('/')[-1].replace('.json', '')
                 templates.append({
                     'id': id_,
                     'title': title

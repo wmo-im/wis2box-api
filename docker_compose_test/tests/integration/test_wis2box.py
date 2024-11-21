@@ -356,3 +356,50 @@ def test_cap2geojson():
     assert 'items' in output
     assert len(output['items']) == 1
     assert output['items'][0]['features'][0]['properties'] == cap_geojson['features'][0]['properties'] # noqa
+
+
+def test_mappings_info():
+    """Test mappings_info process"""
+
+    process_name = 'mappings-info'
+    data = {
+        'inputs': {
+            'plugin': 'wis2box.data.csv2bufr.ObservationDataCSV2BUFR'
+        }
+    }
+
+    # execute the process and get the result
+    result = requests.post(f'{API_URL}/processes/{process_name}/execution', json=data) # noqa
+
+    # check the status code
+    assert result.status_code == 200
+
+    response = result.json()
+
+    expected_response = {
+        "templates": [
+            {
+                "id": "/data/wis2box/mappings/my_csv2bufr_mappings.json",
+                "title": "my_csv2bufr_mappings"
+            },
+            {
+                "id": "daycli-template",
+                "title": "DayCLI"
+            },
+            {
+                "id": "CampbellAfrica-v1-template",
+                "title": "WIS2-pilot-template-2021"
+            },
+            {
+                "id": "aws-template",
+                "title": "AWS"
+            }
+        ]
+    }
+
+    # compare that all expected templates are present, regardless of the order
+    assert len(response['templates']) == len(expected_response['templates'])
+    templates = response['templates']
+    for template in expected_response['templates']:
+        assert template['id'] in [t['id'] for t in templates]
+        assert template['title'] in [t['title'] for t in templates]

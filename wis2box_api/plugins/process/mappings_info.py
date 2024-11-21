@@ -103,7 +103,7 @@ class MappingsInfoProcessor(BaseProcessor):
         if plugin_id == 'wis2box.data.csv2bufr.ObservationDataCSV2BUFR':
             for template in c2bt.list_templates().values():
                 LOGGER.info(template)
-                id = template['path']
+                id_ = template['path']
                 title = template['path']
                 if '/opt/csv2bufr/templates/' in id:
                     id = id.replace('/opt/csv2bufr/templates/', '').replace('.json', '') # noqa
@@ -118,7 +118,7 @@ class MappingsInfoProcessor(BaseProcessor):
                     # extract title from filename
                     title = id.split('/')[-1].replace('.json', '')
                 templates.append({
-                    'id': id,
+                    'id': id_,
                     'title': title
                 })
         outputs = {

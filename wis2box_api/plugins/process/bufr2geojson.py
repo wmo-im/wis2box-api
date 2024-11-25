@@ -131,17 +131,51 @@ class Bufr2geojsonProcessor(BaseProcessor):
             else:
                 raise Exception('No data or data_url provided')
             LOGGER.debug('Generating GeoJSON features')
-            generator = as_geojson(input_bytes, serialize=False)
+            
+            #extract input filename from data_url
+            input_filename = data_url.split('/')[-1]
+            generator = as_geojson(input_bytes)
             # iterate over the generator
             # add the features to a list
+            error = ''
             for collection in generator:
                 for id, item in collection.items():
-                    if 'geojson' in item:
-                        items.append(item['geojson'])
-            LOGGER.info(f'Number of features found: {len(items)}')
+                    LOGGER.info(f'Processing item: {id}')
+                    LOGGER.info(f'item: {item}')
+                    if id != 'geojson':
+                        continue
+                    try:
+                        my_props = {}
+                        my_props['name'] = item['properties']['observedProperty']
+                        my_props['value'] = item['properties']['result']['value']
+                        my_props['units'] = item['properties']['result']['units']
+                        my_props['phenomenonTime'] = item['properties']['phenomenonTime']
+                        my_props['host'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}")
+                        # attempt to extract the reportIdentifier from the parameter
+                        # otherwise use the data_url
+                        report_id = 'reportId not found'
+                        if 'parameter' in item['properties'] and 'reportIdentifier' in item['properties']['parameter']: # noqa
+                            report_id = item['properties']['parameter']['reportIdentifier']	
+                        elif data_url:
+                            report_id = data_url.split('/')[-1].split('.')[0]
+                        my_item = {
+                            'id': item['id'],
+                            'type': item['type'],
+                            'geometry': item['geometry'],
+                            'reportId': report_id,
+                            'properties': my_props,
+                        }
+                        items.append(my_item)
+                    except Exception as e:
+                        msg = f"Error processing item={item['id']}: {e}; "
+                        LOGGER.error(msg)
+                        error += str(msg)
         except Exception as e:
             LOGGER.error(e)
-            error = str(e)
+            error += str(e)
+
+        LOGGER.info(f'Number of features found: {len(items)}')
 
         mimetype = 'application/json'
         outputs = {

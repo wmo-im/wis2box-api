@@ -131,9 +131,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
             else:
                 raise Exception('No data or data_url provided')
             LOGGER.debug('Generating GeoJSON features')
-            
-            #extract input filename from data_url
-            input_filename = data_url.split('/')[-1]
+
             generator = as_geojson(input_bytes)
             # iterate over the generator
             # add the features to a list
@@ -145,18 +143,18 @@ class Bufr2geojsonProcessor(BaseProcessor):
                     if id != 'geojson':
                         continue
                     try:
-                        my_props = {}
-                        my_props['name'] = item['properties']['observedProperty']
-                        my_props['value'] = item['properties']['result']['value']
-                        my_props['units'] = item['properties']['result']['units']
-                        my_props['phenomenonTime'] = item['properties']['phenomenonTime']
-                        my_props['host'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
-                        LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}")
-                        # attempt to extract the reportIdentifier from the parameter
+                        props = {}
+                        props['name'] = item['properties']['observedProperty']
+                        props['value'] = item['properties']['result']['value']
+                        props['units'] = item['properties']['result']['units']
+                        props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
+                        props['host'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}") # noqa
+                        # attempt to extract reportIdentifier from parameter
                         # otherwise use the data_url
                         report_id = 'reportId not found'
                         if 'parameter' in item['properties'] and 'reportIdentifier' in item['properties']['parameter']: # noqa
-                            report_id = item['properties']['parameter']['reportIdentifier']	
+                            report_id = item['properties']['parameter']['reportIdentifier']	# noqa
                         elif data_url:
                             report_id = data_url.split('/')[-1].split('.')[0]
                         my_item = {
@@ -164,7 +162,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                             'type': item['type'],
                             'geometry': item['geometry'],
                             'reportId': report_id,
-                            'properties': my_props,
+                            'properties': props,
                         }
                         items.append(my_item)
                     except Exception as e:

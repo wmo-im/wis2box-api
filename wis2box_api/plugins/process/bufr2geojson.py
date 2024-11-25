@@ -145,11 +145,11 @@ class Bufr2geojsonProcessor(BaseProcessor):
                     try:
                         props = {}
                         props['name'] = item['properties']['observedProperty']
-                        props['value'] = item['properties']['result']['value']
-                        props['units'] = item['properties']['result']['units']
                         props['resultTime'] = item['properties']['resultTime']
                         props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
                         props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        props['value'] = item['properties']['result']['value']
+                        props['units'] = item['properties']['result']['units']
                         LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}") # noqa
                         # attempt to extract reportIdentifier from parameter
                         # otherwise use the data_url
@@ -160,10 +160,9 @@ class Bufr2geojsonProcessor(BaseProcessor):
                             report_id = data_url.split('/')[-1].split('.')[0]
                         my_item = {
                             'id': item['id'],
-                            'type': item['type'],
                             'geometry': item['geometry'],
                             'reportId': report_id,
-                            'properties': props,
+                            'properties': props
                         }
                         items.append(my_item)
                     except Exception as e:

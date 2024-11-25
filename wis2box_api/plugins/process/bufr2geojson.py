@@ -147,8 +147,9 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         props['name'] = item['properties']['observedProperty']
                         props['value'] = item['properties']['result']['value']
                         props['units'] = item['properties']['result']['units']
+                        props['resultTime'] = item['properties']['resultTime']
                         props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
-                        props['host'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
                         LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}") # noqa
                         # attempt to extract reportIdentifier from parameter
                         # otherwise use the data_url

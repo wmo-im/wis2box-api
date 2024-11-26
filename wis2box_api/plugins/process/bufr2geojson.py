@@ -147,7 +147,14 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         props['resultTime'] = item['properties']['resultTime']
                         props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
                         props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
-                        props['value'] = item['properties']['result']['value']
+                        value = item['properties']['result']['value']
+                        units = item['properties']['result']['units']
+                        if units == 'CODE TABLE' and isinstance(value, dict):
+                            props['description'] = value.get('description')
+                            props['value'] = None
+                        else:
+                            props['description'] = None
+                            props['value'] = float(value) if value is not None else None # noqa
                         props['units'] = item['properties']['result']['units']
                         # attempt to extract reportIdentifier from parameter
                         # otherwise use the data_url
@@ -156,10 +163,11 @@ class Bufr2geojsonProcessor(BaseProcessor):
                             report_id = item['properties']['parameter']['reportIdentifier']	# noqa
                         elif data_url:
                             report_id = data_url.split('/')[-1].split('.')[0]
+                        props['reportId'] = report_id
                         my_item = {
                             'id': item['id'],
+                            'type': 'Feature',
                             'geometry': item['geometry'],
-                            'reportId': report_id,
                             'properties': props
                         }
                         items.append(my_item)

@@ -138,8 +138,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
             error = ''
             for collection in generator:
                 for id, item in collection.items():
-                    LOGGER.info(f'Processing item: {id}')
-                    LOGGER.info(f'item: {item}')
+                    LOGGER.debug(f'Processing item: {id}')
                     if id != 'geojson':
                         continue
                     try:
@@ -150,7 +149,6 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
                         props['value'] = item['properties']['result']['value']
                         props['units'] = item['properties']['result']['units']
-                        LOGGER.info(f"keys in item['properties']: {item['properties'].keys()}") # noqa
                         # attempt to extract reportIdentifier from parameter
                         # otherwise use the data_url
                         report_id = 'reportId not found'
@@ -173,7 +171,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
             LOGGER.error(e)
             error += str(e)
 
-        LOGGER.info(f'Number of features found: {len(items)}')
+        LOGGER.debug(f'Number of features to be returned: {len(items)}')
 
         mimetype = 'application/json'
         outputs = {

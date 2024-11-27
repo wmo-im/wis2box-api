@@ -131,17 +131,60 @@ class Bufr2geojsonProcessor(BaseProcessor):
             else:
                 raise Exception('No data or data_url provided')
             LOGGER.debug('Generating GeoJSON features')
-            generator = as_geojson(input_bytes, serialize=False)
+
+            generator = as_geojson(input_bytes)
             # iterate over the generator
             # add the features to a list
+            error = ''
             for collection in generator:
                 for id, item in collection.items():
-                    if 'geojson' in item:
-                        items.append(item['geojson'])
-            LOGGER.info(f'Number of features found: {len(items)}')
+                    LOGGER.debug(f'Processing item: {id}')
+                    if id != 'geojson':
+                        continue
+                    try:
+                        props = {}
+                        props['name'] = item['properties']['observedProperty']
+                        props['resultTime'] = item['properties']['resultTime']
+                        props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
+                        # set observation to the end of the phenomenon time
+                        obsTime = props['phenomenonTime']
+                        if '/' in obsTime:
+                            obsTime = obsTime.split('/')[1]
+                        props['observationTime'] = obsTime
+                        props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        value = item['properties']['result']['value']
+                        units = item['properties']['result']['units']
+                        if units == 'CODE TABLE' and isinstance(value, dict):
+                            props['description'] = value.get('description')
+                            props['value'] = None
+                        else:
+                            props['description'] = None
+                            props['value'] = float(value) if value is not None else None # noqa
+                        props['units'] = item['properties']['result']['units']
+                        # attempt to extract reportIdentifier from parameter
+                        # otherwise use the data_url
+                        report_id = 'reportId not found'
+                        if 'parameter' in item['properties'] and 'reportIdentifier' in item['properties']['parameter']: # noqa
+                            report_id = item['properties']['parameter']['reportIdentifier']	# noqa
+                        elif data_url:
+                            report_id = data_url.split('/')[-1].split('.')[0]
+                        props['reportId'] = report_id
+                        my_item = {
+                            'id': item['id'],
+                            'type': 'Feature',
+                            'geometry': item['geometry'],
+                            'properties': props
+                        }
+                        items.append(my_item)
+                    except Exception as e:
+                        msg = f"Error processing item={item['id']}: {e}; "
+                        LOGGER.error(msg)
+                        error += str(msg)
         except Exception as e:
             LOGGER.error(e)
-            error = str(e)
+            error += str(e)
+
+        LOGGER.debug(f'Number of features to be returned: {len(items)}')
 
         mimetype = 'application/json'
         outputs = {

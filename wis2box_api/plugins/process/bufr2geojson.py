@@ -146,6 +146,11 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         props['name'] = item['properties']['observedProperty']
                         props['resultTime'] = item['properties']['resultTime']
                         props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
+                        # set observation to the end of the phenomenon time
+                        obsTime = props['phenomenonTime']
+                        if '/' in obsTime:
+                            obsTime = obsTime.split('/')[1]
+                        props['observationTime'] = obsTime
                         props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
                         value = item['properties']['result']['value']
                         units = item['properties']['result']['units']

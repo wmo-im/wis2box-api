@@ -33,8 +33,8 @@ RUN apt-get install -y --no-install-recommends \
     libgdal-dev gunicorn python3-gevent python3-gdal python3-elasticsearch libudunits2-dev dos2unix wget \
     && rm -rf /var/lib/apt/lists/*
 
-# install pygeoapi
-RUN pip3 install --no-cache-dir pygeoapi==0.18.0
+# install pygeoapi==0.18.0 from GitHub
+RUN pip3 install --no-cache-dir https://github.com/geopython/pygeoapi/archive/refs/tags/0.18.0.zip
 
 # install wmo software
 RUN pip3 install --no-cache-dir \

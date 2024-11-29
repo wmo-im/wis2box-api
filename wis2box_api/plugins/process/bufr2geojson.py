@@ -136,6 +136,8 @@ class Bufr2geojsonProcessor(BaseProcessor):
             # iterate over the generator
             # add the features to a list
             error = ''
+            
+            last_reportTime = None
             for collection in generator:
                 for id, item in collection.items():
                     LOGGER.debug(f'Processing item: {id}')
@@ -144,14 +146,19 @@ class Bufr2geojsonProcessor(BaseProcessor):
                     try:
                         props = {}
                         props['name'] = item['properties']['observedProperty']
-                        props['resultTime'] = item['properties']['resultTime']
                         props['phenomenonTime'] = item['properties']['phenomenonTime'] # noqa
-                        # set observation to the end of the phenomenon time
-                        obsTime = props['phenomenonTime']
-                        if '/' in obsTime:
-                            obsTime = obsTime.split('/')[1]
-                        props['observationTime'] = obsTime
-                        props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else None # noqa
+                        # set reportTime to the end of the phenomenon time
+                        reportTime = props['phenomenonTime']
+                        if '/' in reportTime:
+                            reportTime = reportTime.split('/')[1]
+                        # update last_reportTime if reportTime is greater than last_reportTime
+                        if last_reportTime is not None:
+                            if reportTime > last_reportTime:
+                                last_reportTime = reportTime
+                        else:
+                            last_reportTime = reportTime
+                        props['reportTime'] = reportTime
+                        props['wigos_station_identifier'] = item['properties']['host'] if 'host' in item['properties'] else '' # noqa
                         value = item['properties']['result']['value']
                         units = item['properties']['result']['units']
                         if units == 'CODE TABLE' and isinstance(value, dict):
@@ -161,14 +168,6 @@ class Bufr2geojsonProcessor(BaseProcessor):
                             props['description'] = None
                             props['value'] = float(value) if value is not None else None # noqa
                         props['units'] = item['properties']['result']['units']
-                        # attempt to extract reportIdentifier from parameter
-                        # otherwise use the data_url
-                        report_id = 'reportId not found'
-                        if 'parameter' in item['properties'] and 'reportIdentifier' in item['properties']['parameter']: # noqa
-                            report_id = item['properties']['parameter']['reportIdentifier']	# noqa
-                        elif data_url:
-                            report_id = data_url.split('/')[-1].split('.')[0]
-                        props['reportId'] = report_id
                         my_item = {
                             'id': item['id'],
                             'type': 'Feature',
@@ -184,7 +183,27 @@ class Bufr2geojsonProcessor(BaseProcessor):
             LOGGER.error(e)
             error += str(e)
 
-        LOGGER.debug(f'Number of features to be returned: {len(items)}')
+
+        if len(items) == 0:
+            error += 'No features generated'
+        else:
+            LOGGER.debug(f'Number of features generated: {len(items)}')
+            # convert last_reportTime to a numbers only string
+            datetime_id = last_reportTime.replace('-', '').replace(':', '').replace('T', '')[:12]
+            # loop over items
+            count = 0
+            for item in items:
+                # add reportTime to the properties
+                item['properties']['reportTime'] = last_reportTime
+                # construct reportId from last_reportTime and wigos_station_identifier
+                reportId = f'{item["properties"]["wigos_station_identifier"]}-{datetime_id}'
+                # add reportId to the properties
+                item['properties']['reportId'] = reportId
+                # construct new id from reportId and count
+                new_id = f'{reportId}-{count}'
+                # update the id
+                item['id'] = new_id
+                count += 1
 
         mimetype = 'application/json'
         outputs = {

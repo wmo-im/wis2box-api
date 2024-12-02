@@ -136,7 +136,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
             # iterate over the generator
             # add the features to a list
             error = ''
-            
+
             last_reportTime = None
             for collection in generator:
                 for id, item in collection.items():
@@ -151,7 +151,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         reportTime = props['phenomenonTime']
                         if '/' in reportTime:
                             reportTime = reportTime.split('/')[1]
-                        # update last_reportTime if reportTime is greater than last_reportTime
+                        # update last_reportTime if reportTime is greater
                         if last_reportTime is not None:
                             if reportTime > last_reportTime:
                                 last_reportTime = reportTime
@@ -183,20 +183,19 @@ class Bufr2geojsonProcessor(BaseProcessor):
             LOGGER.error(e)
             error += str(e)
 
-
         if len(items) == 0:
             error += 'No features generated'
         else:
             LOGGER.debug(f'Number of features generated: {len(items)}')
             # convert last_reportTime to a numbers only string
-            datetime_id = last_reportTime.replace('-', '').replace(':', '').replace('T', '')[:12]
+            datetime_id = last_reportTime.replace('-', '').replace(':', '').replace('T', '')[:12] # noqa
             # loop over items
             count = 0
             for item in items:
                 # add reportTime to the properties
                 item['properties']['reportTime'] = last_reportTime
-                # construct reportId from last_reportTime and wigos_station_identifier
-                reportId = f'{item["properties"]["wigos_station_identifier"]}-{datetime_id}'
+                # construct reportId from last_reportTime and wsi
+                reportId = f'{item["properties"]["wigos_station_identifier"]}-{datetime_id}' # noqa
                 # add reportId to the properties
                 item['properties']['reportId'] = reportId
                 # construct new id from reportId and count

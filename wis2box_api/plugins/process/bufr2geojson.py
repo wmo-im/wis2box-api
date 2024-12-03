@@ -164,6 +164,10 @@ class Bufr2geojsonProcessor(BaseProcessor):
                         if units == 'CODE TABLE' and isinstance(value, dict):
                             props['description'] = value.get('description')
                             props['value'] = None
+                        elif isinstance(value, dict):
+                            LOGGER.info(f"Skipping item  with value={value} and units={units}")
+                            # skip item
+                            continue
                         else:
                             props['description'] = None
                             props['value'] = float(value) if value is not None else None # noqa

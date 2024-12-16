@@ -165,7 +165,7 @@ class Bufr2geojsonProcessor(BaseProcessor):
                             props['description'] = value.get('description')
                             props['value'] = None
                         elif isinstance(value, dict):
-                            LOGGER.info(f"Skipping item  with value={value} and units={units}")
+                            LOGGER.info(f"Skipping item  with value={value} and units={units}") # noqa
                             # skip item
                             continue
                         else:

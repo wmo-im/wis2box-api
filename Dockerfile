@@ -23,7 +23,7 @@ FROM ghcr.io/wmo-im/dim_eccodes_baseimage:latest
 ENV PYGEOAPI_CONFIG=/data/wis2box/config/pygeoapi/local.config.yml
 ENV PYGEOAPI_OPENAPI=/data/wis2box/config/pygeoapi/local.openapi.yml
 
-ENV CSV2BUFR_TEMPLATES=/root
+ENV CSV2BUFR_TEMPLATES=/data/wis2box/mappings
 
 WORKDIR /root
 

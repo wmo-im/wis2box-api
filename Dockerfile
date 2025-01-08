@@ -49,11 +49,11 @@ RUN mkdir -p /data && \
     curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
 
 # get latest version of csv2bufr templates and install
-RUN export c2bt=`git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/wmo-im/csv2bufr-templates.git | tail -1 | cut -d '/' -f 3|sed 's/v//'` && \
-    mkdir /opt/csv2bufr &&  \
+RUN c2bt=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/wmo-im/csv2bufr-templates.git | tail -1 | cut -d '/' -f 3 | sed 's/v//') && \
+    mkdir /opt/csv2bufr && \
     cd /opt/csv2bufr && \
     wget https://github.com/wmo-im/csv2bufr-templates/archive/refs/tags/v${c2bt}.tar.gz && \
-    tar -zxf v${c2bt}.tar.gz --strip-components=1 csv2bufr-templates-${c2bt}/templates \
+    tar -zxf v${c2bt}.tar.gz --strip-components=1 csv2bufr-templates-${c2bt}/templates
 
 # install wis2box-api
 COPY . /app

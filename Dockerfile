@@ -40,7 +40,6 @@ RUN pip3 install --no-cache-dir https://github.com/geopython/pygeoapi/archive/re
 RUN pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/refs/tags/0.3.2.zip \
     https://github.com/wmo-im/pywcmp/archive/refs/tags/0.8.5.zip \
-    git+https://github.com/wmo-im/bufr2geojson@wccdm \
     https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.7.0.zip
 
 RUN pywcmp bundle sync
@@ -49,11 +48,12 @@ RUN mkdir -p /data && \
     cd /data && \
     curl -f -L -o /data/wmo-ra.geojson https://raw.githubusercontent.com/OGCMetOceanDWG/wmo-ra/master/wmo-ra.geojson
 
-# install csv2bufr templates
-RUN mkdir /opt/csv2bufr &&  \
+# get latest version of csv2bufr templates and install
+RUN export c2bt=`git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' https://github.com/wmo-im/csv2bufr-templates.git | tail -1 | cut -d '/' -f 3|sed 's/v//'` && \
+    mkdir /opt/csv2bufr &&  \
     cd /opt/csv2bufr && \
-    wget https://github.com/wmo-im/csv2bufr-templates/archive/main.tar.gz && \
-    tar -zxf main.tar.gz --strip-components=1 csv2bufr-templates-main/templates
+    wget https://github.com/wmo-im/csv2bufr-templates/archive/refs/tags/v${c2bt}.tar.gz && \
+    tar -zxf v${c2bt}.tar.gz --strip-components=1 csv2bufr-templates-${c2bt}/templates \
 
 # install wis2box-api
 COPY . /app

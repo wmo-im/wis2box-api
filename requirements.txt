@@ -11,5 +11,6 @@ psycopg2
 pygeometa
 pymetdecoder-wmo==0.1.14
 synop2bufr==0.7.0
-csv2bufr==0.8.3
+csv2bufr==0.8.4
 minio==7.2.7
+bufr2geojson==0.7.0

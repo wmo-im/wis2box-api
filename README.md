@@ -68,9 +68,9 @@ git push origin main
 
 * [PEP8](https://www.python.org/dev/peps/pep-0008)
 
-### Bugs and Issues
+## Issues
 
-All bugs, enhancements and issues are managed on [GitHub](https://github.com/wmo-im/wis2box-api/issues).
+Please direct all issues to the [main wis2box issue tracker](https://github.com/wmo-im/wis2box/issues)
 
 ## Contact
 

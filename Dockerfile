@@ -34,7 +34,7 @@ RUN apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # install pygeoapi==0.18.0 from GitHub
-RUN pip3 install --no-cache-dir https://github.com/geopython/pygeoapi/archive/refs/tags/0.18.0.zip
+RUN pip3 install --no-cache-dir https://github.com/geopython/pygeoapi/archive/refs/tags/0.19.0.zip
 
 # install wmo software
 RUN pip3 install --no-cache-dir \

@@ -215,7 +215,7 @@ class StationInfoProcessor(BaseProcessor):
                 },
                 'aggs': {
                     'count': {
-                        'terms': {'field': 'properties.reportId.raw', 'size': 64000}
+                        'terms': {'field': 'properties.reportId.raw', 'size': 64000} # noqa
                     }
                 }
             }

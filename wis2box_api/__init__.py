@@ -19,4 +19,24 @@
 #
 ###############################################################################
 
+from flask import make_response
+
 __version__ = 'wis2box-1.0b8'
+
+
+def get_response(result: tuple):
+    """
+    Creates a Flask Response object and updates matching headers.
+
+    :param result: The result of the API call.
+                   This should be a tuple of (headers, status, content).
+
+    :returns: A Response instance
+    """
+
+    headers, status, content = result
+    response = make_response(content, status)
+
+    if headers:
+        response.headers = headers
+    return response

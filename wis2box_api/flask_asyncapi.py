@@ -24,9 +24,9 @@ import logging
 
 from flask import Blueprint, request
 
-from pygeoapi.flask_app import get_response
 from pygeoapi.util import yaml_load
 
+from wis2box_api import get_response
 from wis2box_api.asyncapi import AsyncAPI
 
 LOGGER = logging.getLogger(__name__)

@@ -201,7 +201,7 @@ class StationInfoProcessor(BaseProcessor):
                 'filter': [
                     {
                         'range': {
-                            'properties.resultTime.raw': {'gte': date_offset}
+                            'properties.reportTime.raw': {'gte': date_offset}
                         }
                     }
                 ]
@@ -215,7 +215,7 @@ class StationInfoProcessor(BaseProcessor):
                 },
                 'aggs': {
                     'count': {
-                        'terms': {'field': 'reportId.raw', 'size': 64000}
+                        'terms': {'field': 'properties.reportId.raw', 'size': 64000} # noqa
                     }
                 }
             }

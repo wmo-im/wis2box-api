@@ -8,6 +8,7 @@ server:
     languages:
         - en-US
     pretty_print: false
+    admin: true
     limit: 500
     map:
         url: ${WIS2BOX_BASEMAP_URL}

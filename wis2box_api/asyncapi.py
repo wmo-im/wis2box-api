@@ -70,7 +70,7 @@ def get_asyncapi(api: AsyncAPI, request: Union[APIRequest, Any]) -> Tuple[dict, 
     headers['Content-Type'] = 'application/json'
 
     content = to_json(generate_asyncapi(api.config, request.locale),
-                        api.pretty_print)
+                      api.pretty_print)
 
     return headers, 200, content
 

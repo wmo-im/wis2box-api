@@ -36,11 +36,11 @@ RUN apt-get install -y --no-install-recommends \
 # install pygeoapi==0.18.0 from GitHub
 RUN pip3 install --no-cache-dir https://github.com/geopython/pygeoapi/archive/refs/tags/0.18.0.zip
 
-# install wmo software
+# install WMO software
 RUN pip3 install --no-cache-dir \
     https://github.com/wmo-im/pywis-topics/archive/refs/tags/0.3.2.zip \
     https://github.com/wmo-im/pywcmp/archive/refs/tags/0.8.5.zip \
-    https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.7.0.zip
+    https://github.com/wmo-cop/pyoscar/archive/refs/tags/0.9.0.zip
 
 RUN pywcmp bundle sync
 

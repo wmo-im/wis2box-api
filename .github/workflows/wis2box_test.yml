@@ -38,9 +38,9 @@ jobs:
       - name: publish stations and associate to topic
         working-directory: docker_compose_test
         run: |
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/synop-test/data/core/weather/surface-based-observations/synop
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/csv-test/data/core/weather/surface-based-observations/synop
-          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/station_list.csv -th origin/a/wis2/bufr-test/data/core/weather/surface-based-observations/synop
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/synop-test.csv -th origin/a/wis2/synop-test/data/core/weather/surface-based-observations/synop
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/csv-test.csv -th origin/a/wis2/csv-test/data/core/weather/surface-based-observations/synop
+          docker exec -t wis2box-api-test-wis2box-management wis2box metadata station publish-collection -p /data/wis2box/metadata/station/bufr-test.csv -th origin/a/wis2/bufr-test/data/core/weather/surface-based-observations/synop
       - name: Check status code API
         working-directory: docker_compose_test
         run: |

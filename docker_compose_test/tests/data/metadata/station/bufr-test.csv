@@ -1,4 +1,2 @@
 station_name,wigos_station_identifier,traditional_station_identifier,facility_type,latitude,longitude,elevation,barometer_height,territory_name,wmo_region
-POINTE-NOIRE,0-20000-0-64400,64400,landFixed,-4.8045,11.8817,18.00,19.20,COD,africa
-OCNA SUGATAG,0-20000-0-15015,15015,landFixed,47.7770616258,23.9404602638,503,,ROU,europe
 MONTE SCURO,0-20000-0-16344,16344,landFixed,39.3305555556,16.3963888889,1669,1677.0,ITA,europe

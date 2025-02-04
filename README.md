@@ -1,17 +1,16 @@
 # wis2box-api
 
-WIS 2.0 in a box OGC API, implemented using [pygeoapi](https://pygeoapi.io), and intended for use for within the [wis2box](https://docs.wis2box.wis.wmo.int) project.
+WIS 2.0 in a box API provides [OGC API](https://ogcapi.ogc.org) support using [pygeoapi](https://pygeoapi.io), and intended for use for within the [wis2box](https://docs.wis2box.wis.wmo.int) project.
 
-The wis2box-api uses the base-image provided by [dim_eccodes_baseimage](https://github.com/wmo-im/dim_eccodes_baseimage) to enable support for data-conversion through pygeoapi-processes.
+wis2box-api uses the base image provided by [dim_eccodes_baseimage](https://github.com/wmo-im/dim_eccodes_baseimage) to enable support for data conversion through pygeoapi processes.
 
 ## Installation
 
-wis2box-api is part of the [wis2box](https://community.wmo.int/en/activity-areas/wis/wis2box)-software stack.
+wis2box-api is part of the [wis2box](https://community.wmo.int/en/activity-areas/wis/wis2box) software stack.
 
 ### Dependencies
 
-Dependencies are listed in [requirements.txt](requirements.txt). Dependencies
-are automatically installed during wis2box-api's installation.
+Dependencies are listed in [requirements.txt](requirements.txt). Dependencies are automatically installed during wis2box-api installation.
 
 ## Releasing
 

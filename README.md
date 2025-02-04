@@ -1,50 +1,17 @@
 # wis2box-api
 
-WIS 2.0 in a box OGC API
+WIS 2.0 in a box OGC API, implemented using [pygeoapi](https://pygeoapi.io), and intended for use for within the [wis2box](https://docs.wis2box.wis.wmo.int) project.
+
+The wis2box-api uses the base-image provided by [dim_eccodes_baseimage](https://github.com/wmo-im/dim_eccodes_baseimage) to enable support for data-conversion through pygeoapi-processes.
 
 ## Installation
 
-wis2box-api is part of the [wis2box](https://docs.wis2box.wis.wmo.int) project.
-
-### Requirements
-
-* Python 3 and above
-* Python [virtualenv](https://virtualenv.pypa.io/) package
+wis2box-api is part of the [wis2box](https://community.wmo.int/en/activity-areas/wis/wis2box)-software stack.
 
 ### Dependencies
 
 Dependencies are listed in [requirements.txt](requirements.txt). Dependencies
 are automatically installed during wis2box-api's installation.
-
-### Installing the Package
-
-```bash
-python3 -m venv my-env
-cd my-env
-. bin/activate
-git clone https://github.com/wmo-im/wis2box-api.git
-cd wis2box-api
-python setup.py build
-python setup.py install
-```
-
-## Running
-
-```bash
-export FLASK_APP=wis2box_api.app
-flask run
-```
-
-## Development
-
-### Setting up a Development Environment
-
-Same as installing a package.  Use a virtualenv.  Also install developer
-requirements:
-
-```bash
-pip install -r requirements-dev.txt
-```
 
 ## Releasing
 
